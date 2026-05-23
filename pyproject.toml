@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "fly-in"
+description = "simulation of drone turns from the start to the end"
+version = "1.0"
+author = "alsauvan <alsauvan@student.42lyon.fr>"
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+pydantic = ">=2.11"
+
+[tool.poetry.group.dev.dependencies]
+flake8 = ">=7.3.0,<8.0.0"
+mypy = ">=1.19.1,<2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
