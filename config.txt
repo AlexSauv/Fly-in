@@ -1,4 +1,5 @@
 nb_drones: 5
+
 start_hub: hub 0 0 [color=green]
 end_hub: goal 10 10 [color=yellow]
 hub: roof1 3 4 [zone=restricted color=red]
