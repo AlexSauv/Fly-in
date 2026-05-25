@@ -1,6 +1,7 @@
 
 from enum import Enum
 from typing import Optional
+from typing_extensions import Self
 from pydantic import BaseModel, Field, model_validator, ValidationError
 
 
@@ -36,7 +37,7 @@ class Drone(BaseModel):
 
 class Hub(BaseModel):
     name: str = Field(min_length=2, max_length=10)
-    zone_type: str = Field(default=Zone_Type.NORMAL.value)
+    zone_type: Zone_Type = Field(default=Zone_Type.NORMAL.value)
     color: Optional[str] = Field(default=None)
     position: tuple[int, int] = Field(default=None)
     max_drones: int = Field(default=1, ge=1)
@@ -45,11 +46,11 @@ class Hub(BaseModel):
 class Connection(BaseModel):
     hub_name_a: str = Field(min_length=1)
     hub_name_b: str = Field(min_length=1)
-    zones: list[Hub] = Field(ge=2)
+    zones: list[Hub] = Field(max_length=2)
     max_link_capacity: Optional[int] = Field(ge=1, default=1)
 
     @model_validator(mode="after")
-    def check_name(self) -> self:
+    def check_name(self) -> Self:
         if self.hub_name_a == self.hub_name_b:
             raise ValueError("[Error] Both hub names must differ.")
-        return self
+        return Self

@@ -1,9 +1,15 @@
-from typing import Any
+from typing import Any, Optional
+from utils import Hub, Connection
 import sys
 
 class MapParser:
     def __init__(self, name_file: str):
         self.name_file = name_file
+        self.nb_drones: int = 0
+        self.hubs: dict[str, Hub] = []
+        self.connections: list[Connection] = []
+        self.start_hub: Optional[Hub] = None
+        self.end_hub: Optional[Hub] = None
 
     def fetch_infos(self) -> list[list[str]]:
         try:
@@ -16,6 +22,7 @@ class MapParser:
         except OSError:
             print("[Error] There are issues with the settings file.")
             sys.exit(1)
+
         if not settings[0].startswith("nb_drones:"):
             print("[Error] The settings file must begin with "
                   "nb_drones: (integer).")
@@ -23,22 +30,25 @@ class MapParser:
         if not settings:
             print("[Error] The settings file must contain datas.")
             sys.exit(1)
+        return settings
 
+    def split_keys_values(self):
+        datas = self.fetch_infos()
         keys_values: dict = {}
-        for data in settings:
+        for data in datas:
             separator = data.find(":")
-            if separator != -1 and data.count(':') == 1:
+            if separator != -1 and data.count(':', 1):
                 key, value = data.split(":")
                 if key in keys_values:
-                    keys_values[key].update({value})
+                    keys_values[key].update({value.strip()})
                 else:
-                    keys_values.setdefault(key, {value})
+                    keys_values.setdefault(key, {value.strip()})
             else:
                 print("[Error] There are issues with the settings file.")
+                print("[Error] The format is key:value [optional=detail]")
                 sys.exit(1)
         return keys_values
-    def fetch_
-    
+
     def fetch_metadata(self):
         settings = self.fetch_infos()
         for key in settings:
@@ -58,11 +68,8 @@ class MapParser:
 
 def main() -> None:
     settings = MapParser('config.txt')
-    test = settings.fetch_metadata()
-    i = 0
-    for key in test:
-        print(f"Key {i} ==> {test[key]}")
-        i += 1
+    test = settings.split_keys_values()
+    print(f"Key {test} ==> {test.keys()}")
 
 
 if __name__ == "__main__":
