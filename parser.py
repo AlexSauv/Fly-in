@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from utils import Hub, Connection
+from utils import Hub, Connection, Zone_Type, Color
 import sys
 
 class MapParser:
@@ -53,7 +53,7 @@ class MapParser:
             if "hub" in prefix:
                 content: list = details.split()
                 for meta in content:
-                    if metadata and meta == metadata:
+                    if metadata and meta in metadata:
                         content.pop(i)
                     i += 1
                 # metadata = [meta for meta in content if "[" in meta]
@@ -61,6 +61,13 @@ class MapParser:
                 print(prefix)
                 print(content)
                 print(f"THAT'S META_DATA {metadata}")
+                if metadata:
+                    options = self.get_metadata_attributes(metadata)
+                self.generate_hub(prefix, content[0], content[1], content[2], options)
+        print(self.hubs.items())
+        print(f"start_hub => {self.start_hub}")
+        print(f"end hub => {self.end_hub}")
+
 
         # return keys_values
     
@@ -87,8 +94,80 @@ class MapParser:
         if len(meta_data) <= 1:
             meta_data = None
         return meta_data
-        
+    
+    def get_metadata_attributes(self, metadata: str) -> None:
+        try:
+            meta = metadata.strip("[]")
+            parts = meta.split()
+            datas = {}
+            for part in parts:
+                if "=" not in part:
+                    raise ValueError("Metadatas must be given as [optional=data optional=data]")
+                else:
+                    key, value = part.split("=")
+                if key == "zone":
+                    datas.setdefault(key, value)
+                elif key == "color":
+                    datas.setdefault(key, value)
+                elif key == "max_drones":
+                    datas.setdefault(key, value)
+                elif key == "max_link_capacity":
+                    datas.setdefault(key, value)
+                else:
+                    raise ValueError("Option unknown make sure to add"
+                                     " the right options")
+        except Exception as e:
+            print(f"[Error] {e}")
+            sys.exit(1)
+        print(f"\n\n\n{datas.items()}\n\n\n")
+        return datas
+
+    def generate_hub(self, prefix: str,
+                     name_hub: str, row: str, col: str, metadata: dict) -> None:
+        try:
+            pos: tuple = (int(row), int(col))
+            zone = Zone_Type.NORMAL.value
+            color_choose = None
+            if "zone" in metadata:
+                if metadata["zone"] == "normal":
+                    zone = Zone_Type.NORMAL.value
+                elif metadata["zone"] == "blocked":
+                    zone = Zone_Type.BLOCKED.value
+                elif metadata["zone"] == "restricted":
+                    zone = Zone_Type.RESTRICTED.value
+                elif metadata["zone"] == "priority":
+                    zone = Zone_Type.PRIORITY.value
+                else:
+                    raise ValueError("Zone type unknown")
+            if "color" in metadata:
+                if metadata["color"] not in Color:
+                    raise ValueError("Unknown color")
+                color_choose = Color(metadata["color"])
+                for color in Color:
+                    if metadata["color"] == color:
+                        hub_color = color_choose.value
+            # # if metadata["color"] in metadata:
+                
+  
+            hub = Hub(name=name_hub,
+                      zone_type=zone,
+                      color=hub_color,
+                      position=pos
+                      )
+            if not hub:
+                print("Cannot create the hub, not found enough datas.")
+                sys.exit(1)
+            self.hubs.setdefault(name_hub, hub)
+            if prefix == "start_hub":
+                self.start_hub = hub
+            if prefix == "end_hub":
+                self.end_hub = hub
             
+        except Exception as e:
+            print(f"[Error] {e}")
+            sys.exit(1)
+            
+        
 
 
 def main() -> None:
