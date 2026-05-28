@@ -56,15 +56,22 @@ class MapParser:
                     if metadata and meta in metadata:
                         content.pop(i)
                     i += 1
-                # metadata = [meta for meta in content if "[" in meta]
-                # metadata += [meta for meta in content if "]" in meta]
                 print(prefix)
                 print(content)
                 print(f"THAT'S META_DATA {metadata}")
                 if metadata:
                     options = self.get_metadata_attributes(metadata)
                 self.generate_hub(prefix, content[0], content[1], content[2], options)
-        print(self.hubs.items())
+            if "connection" in prefix:
+                content: list = details.split()
+                names = content[0].split("-")
+                print(names)
+                if metadata:
+                    options = self.get_metadata_attributes(metadata)
+                self.generate_connections(names[0], names[1])
+                
+                
+        print(self.connections)
         print(f"start_hub => {self.start_hub}")
         print(f"end hub => {self.end_hub}")
 
@@ -139,19 +146,18 @@ class MapParser:
                     zone = Zone_Type.PRIORITY.value
                 else:
                     raise ValueError("Zone type unknown")
-            if "color" in metadata:
-                if metadata["color"] not in Color:
-                    raise ValueError("Unknown color")
-                color_choose = Color(metadata["color"])
-                for color in Color:
-                    if metadata["color"] == color:
-                        hub_color = color_choose.value
+            # if "color" in metadata:
+            #     if metadata["color"] not in Color:
+            #         raise ValueError("Unknown color")
+            #     color_choose = Color(metadata["color"])
+            #     for color in Color:
+            #         if metadata["color"] == color:
+            #             hub_color = color_choose.value
             # # if metadata["color"] in metadata:
                 
-  
             hub = Hub(name=name_hub,
                       zone_type=zone,
-                      color=hub_color,
+                    #   color=hub_color,
                       position=pos
                       )
             if not hub:
@@ -167,6 +173,24 @@ class MapParser:
             print(f"[Error] {e}")
             sys.exit(1)
             
+    def generate_connections(self, name_one: str, name_two: str) -> None:
+        try:
+            link = []
+            for hub in self.hubs:
+                if hub.name == name_one:
+                    link.append(hub)
+                if hub.name == name_two:
+                    link.append(hub)
+            if len(link) != 2:
+                raise ValueError("The connection needs 2 hubs")
+            
+            connect = Connection(hub_name_a=name_one,
+                                    hub_name_b=name_two,
+                                    zones=link
+                                    ) 
+            self.connections.append(connect)
+        except Exception as e:
+            print(f"[Error] {e}")
         
 
 
