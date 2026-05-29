@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from utils import Hub, Connection, Zone_Type, Color
+from utils import Hub, Connection, ZoneType, Color
 import re
 import sys
 
@@ -57,6 +57,7 @@ class MapParser:
                     print("[ERROR] Not the right number of arguments, "
                           " You need 'name' 'pos one' 'pos two'")
                     sys.exit(1)
+                self.generate_hub(prefix, settings[0], settings[1], settings[2], metadata)
                 
             # print(f"PREFIX ===> {prefix}")
             # print(f"CONTENT ====> {details}")
@@ -111,50 +112,62 @@ class MapParser:
             meta_content = None
         return main_settings, meta_data
     
-    def get_metadata_attributes(self, metadata: str) -> None:
-        try:
-            meta = metadata.strip("[]")
-            parts = meta.split()
-            datas = {}
-            for part in parts:
-                if "=" not in part:
-                    raise ValueError("Metadatas must be given as [optional=data optional=data]")
-                else:
-                    key, value = part.split("=")
-                if key == "zone":
-                    datas.setdefault(key, value)
-                elif key == "color":
-                    datas.setdefault(key, value)
-                elif key == "max_drones":
-                    datas.setdefault(key, value)
-                elif key == "max_link_capacity":
-                    datas.setdefault(key, value)
-                else:
-                    raise ValueError("Option unknown make sure to add"
-                                     " the right options")
-        except Exception as e:
-            print(f"[Error] {e}")
-            sys.exit(1)
-        print(f"\n\n\n{datas.items()}\n\n\n")
-        return datas
+    # def get_metadata_attributes(self, metadata: str) -> None:
+    #     try:
+    #         meta = metadata.strip("[]")
+    #         parts = meta.split()
+    #         datas = {}
+    #         for part in parts:
+    #             if "=" not in part:
+    #                 raise ValueError("Metadatas must be given as [optional=data optional=data]")
+    #             else:
+    #                 key, value = part.split("=")
+    #             if key == "zone":
+    #                 datas.setdefault(key, value)
+    #             elif key == "color":
+    #                 datas.setdefault(key, value)
+    #             elif key == "max_drones":
+    #                 datas.setdefault(key, value)
+    #             elif key == "max_link_capacity":
+    #                 datas.setdefault(key, value)
+    #             else:
+    #                 raise ValueError("Option unknown make sure to add"
+    #                                  " the right options")
+    #     except Exception as e:
+    #         print(f"[Error] {e}")
+    #         sys.exit(1)
+    #     print(f"\n\n\n{datas.items()}\n\n\n")
+        # return datas
 
     def generate_hub(self, prefix: str,
                      name_hub: str, row: str, col: str, metadata: dict) -> None:
+        if "-" in name_hub:
+            print("[Error] Hub name must not contains '-'.")
+            sys.exit(1)
+        if name_hub in self.hubs:
+            print(f"[Error] Hub called {name_hub} already register.")
+            sys.exit(1)
+        zones = {
+                
+                "restricted": ZoneType.RESTRICTED.value,
+                "blocked": ZoneType.BLOCKED.value,
+                "priority": ZoneType.PRIORITY.value
+                }
         try:
-            pos: tuple = (int(row), int(col))
-            zone = Zone_Type.NORMAL.value
-            color_choose = None
-            if "zone" in metadata:
-                if metadata["zone"] == "normal":
-                    zone = Zone_Type.NORMAL.value
-                elif metadata["zone"] == "blocked":
-                    zone = Zone_Type.BLOCKED.value
-                elif metadata["zone"] == "restricted":
-                    zone = Zone_Type.RESTRICTED.value
-                elif metadata["zone"] == "priority":
-                    zone = Zone_Type.PRIORITY.value
-                else:
-                    raise ValueError("Zone type unknown")
+            pos: tuple[int, int] = (int(row), int(col))
+            zone_data = metadata.get("zone")
+            if zone_data == "normal":
+                zone = ZoneType.NORMAL.value,
+            elif zone_data == "blocked":
+                zone = ZoneType.BLOCKED.value
+            elif zone_data == "restricted":
+                zone = ZoneType.RESTRICTED.value
+            elif zone_data == "priority":
+                zone = ZoneType.PRIORITY.value
+            else:
+                raise ValueError("Zone type unknown")
+            max_drones = metadata.get("max_drones", 1)
+                
             # if "color" in metadata:
             #     if metadata["color"] not in Color:
             #         raise ValueError("Unknown color")

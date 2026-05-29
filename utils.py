@@ -5,7 +5,7 @@ from typing_extensions import Self
 from pydantic import BaseModel, Field, model_validator, ValidationError
 
 
-class Zone_Type(Enum):
+class ZoneType(Enum):
     NORMAL = "normal"
     BLOCKED = "blocked"
     RESTRICTED = "restricted"
@@ -37,7 +37,7 @@ class Drone(BaseModel):
 
 class Hub(BaseModel):
     name: str = Field(min_length=2, max_length=10)
-    zone_type: Zone_Type = Field(default=Zone_Type.NORMAL.value)
+    zone_type: ZoneType = Field(default=ZoneType.NORMAL.value)
     color: Optional[str] = Field(default=None)
     position: tuple[int, int] = Field(default=None)
     max_drones: int = Field(default=1, ge=1)
