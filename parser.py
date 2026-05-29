@@ -1,5 +1,6 @@
 from typing import Any, Optional
 from utils import Hub, Connection, Zone_Type, Color
+import re
 import sys
 
 class MapParser:
@@ -11,69 +12,70 @@ class MapParser:
         self.start_hub: Optional[Hub] = None
         self.end_hub: Optional[Hub] = None
 
-    def fetch_infos(self) -> list[list[str]]:
+    def fetch_infos(self) -> list[str]:
+        settings: list[str] = []
         try:
-            settings: list[str] = []
             with open(self.name_file, 'r') as file:
-                for line in file:
+                for line_num, line in enumerate(file, 1):
                     cleaned_line = line.strip()
-                    if cleaned_line and not cleaned_line.startswith("#"):
-                        settings.append(cleaned_line)
-                    if cleaned_line and cleaned_line.find(":") == -1:
-                        raise ValueError
-        except OSError:
-            print("[Error] There are issues with the settings file.")
-            sys.exit(1)
-        except ValueError:
-            print("[Error] The format is key:value [optional=detail]")
-            sys.exit(1)
-        try:
-            if settings[0].startswith("nb_drones:"):
-                drones = int(settings[0].split(":")[1].strip())
-                if drones < 0:
-                    raise ValueError
-                self.nb_drones = drones
-  
-        except ValueError:
-            print("[Error] The settings file must begin with "
-                  "nb_drones: (integer).")
-            sys.exit(1)
+                    if not cleaned_line or cleaned_line.startswith("#"):
+                        continue
+                    if ":" not in cleaned_line:
+                        print(f"[Error] Line {line_num} The format is 'key:value [optional=detail]'")
+                        sys.exit(1)
 
+                    settings.append(cleaned_line)
+        except OSError:
+            print(f"[Error] Cannot read file named: {self.name_file}.")
+            sys.exit(1)
         if not settings:
-            print("[Error] The settings file must contain datas.")
+            print("[Error] Empty datas setting.")
             sys.exit(1)
         return settings
 
-    def fetch_hub_datas(self):
-        datas = self.fetch_infos()
-        for data in datas:
-            i = 0
-            prefix, details = data.split(":")
-            metadata = self.fetch_metadata(details)
-            if "hub" in prefix:
-                content: list = details.split()
-                for meta in content:
-                    if metadata and meta in metadata:
-                        content.pop(i)
-                    i += 1
-                print(prefix)
-                print(content)
-                print(f"THAT'S META_DATA {metadata}")
-                if metadata:
-                    options = self.get_metadata_attributes(metadata)
-                self.generate_hub(prefix, content[0], content[1], content[2], options)
-            if "connection" in prefix:
-                content: list = details.split()
-                names = content[0].split("-")
-                print(names)
-                if metadata:
-                    options = self.get_metadata_attributes(metadata)
-                self.generate_connections(names[0], names[1])
+    def get_main_settings(self) -> None:
+        lines: list[str] = self.fetch_infos()
+        if not lines[0].startswith("nb_drones:"):
+            print("[Error] Setting file must begin with 'nb_drones:int'")
+            sys.exit(1)
+        try:
+            self.nb_drones = int(lines[0].split(":")[1].strip())
+            if self.nb_drones <= 0:
+                raise ValueError
+        except ValueError:
+            print("[Error] 'nb_drones' must be a positive integer")
+            sys.exit(1)
+
+        for line in lines[1:]:
+            prefix, details = line.split(":")
+            prefix = prefix.strip()
+            content, metadata = self.fetch_metadata(details)
+            settings = content.split()
+            
+            if prefix in ("hub", "start_hub", "end_hub"):
+                if len(settings) != 3:
+                    print("[ERROR] Not the right number of arguments, "
+                          " You need 'name' 'pos one' 'pos two'")
+                    sys.exit(1)
+                
+            # print(f"PREFIX ===> {prefix}")
+            # print(f"CONTENT ====> {details}")
+            #     print(f"THAT'S META_DATA {metadata}")
+            #     if metadata:
+            #         options = self.get_metadata_attributes(metadata)
+            #     self.generate_hub(prefix, content[0], content[1], content[2], options)
+            # if "connection" in prefix:
+            #     content: list = details.split()
+            #     names = content[0].split("-")
+            #     print(names)
+            #     if metadata:
+            #         options = self.get_metadata_attributes(metadata)
+            #     self.generate_connections(names[0], names[1])
                 
                 
-        print(self.connections)
-        print(f"start_hub => {self.start_hub}")
-        print(f"end hub => {self.end_hub}")
+        # print(self.connections)
+        # print(f"start_hub => {self.start_hub}")
+        # print(f"end hub => {self.end_hub}")
 
 
         # return keys_values
@@ -88,19 +90,26 @@ class MapParser:
     #     #         self.nb_drones = int(drones)
     #     #     elif data == "start_hub":
     #     #         name = datas[data].endswith(" ")
-                
 
-    def fetch_metadata(self, details: list):
-        meta_data: str | None = ""
-        if "[" and "]" in details:
-            meta_data_start = details.index('[')
-            meta_data_end = details.index(']')
-            while meta_data_start < meta_data_end + 1:
-                meta_data += details[meta_data_start]
-                meta_data_start += 1
-        if len(meta_data) <= 1:
-            meta_data = None
-        return meta_data
+
+    def fetch_metadata(self, details: str) -> tuple[str, dict[str, str]]:
+        meta_data: dict[str, str] = {}
+        match = re.search(r'\[(.*?)\]', details)
+
+        if match:
+            meta_content = match.group(1)
+            main_settings = details.replace(match.group(0), '').strip()
+            for part in meta_content.split():
+                if "=" not in part:
+                    print("Metadata must be '[details=infos]'")
+                    sys.exit(1)
+                key, value = part.split("=")
+                meta_data[key] = value
+
+        else:
+            main_settings = details
+            meta_content = None
+        return main_settings, meta_data
     
     def get_metadata_attributes(self, metadata: str) -> None:
         try:
@@ -196,7 +205,7 @@ class MapParser:
 
 def main() -> None:
     settings = MapParser('config.txt')
-    settings.fetch_hub_datas()
+    settings.get_main_settings()
     # print(f"Key {test} ==> {test}")
     # print(settings.nb_drones)
     # settings.fetch_hub_datas()
