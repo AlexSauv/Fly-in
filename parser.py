@@ -8,7 +8,7 @@ class MapParser:
         self.name_file = name_file
         self.nb_drones: int = 0
         self.hubs: dict[str, Hub] = {}
-        self.connections: list[Connection] = []
+        self.connections: dict[str, list[Connection]] = {}
         self.start_hub: Optional[Hub] = None
         self.end_hub: Optional[Hub] = None
 
@@ -34,64 +34,44 @@ class MapParser:
         return settings
 
     def get_main_settings(self) -> None:
-        lines: list[str] = self.fetch_infos()
-        if not lines[0].startswith("nb_drones:"):
-            print("[Error] Setting file must begin with 'nb_drones:int'")
-            sys.exit(1)
         try:
+            lines: list[str] = self.fetch_infos()
+            if not lines[0].startswith("nb_drones:"):
+                print("[Error] Setting file must begin with 'nb_drones:int'")
+                sys.exit(1)
+
             self.nb_drones = int(lines[0].split(":")[1].strip())
             if self.nb_drones <= 0:
-                raise ValueError
-        except ValueError:
-            print("[Error] 'nb_drones' must be a positive integer")
-            sys.exit(1)
+                raise ValueError("[Error] 'nb_drones' must be a"
+                                 " positive integer")
 
-        for line in lines[1:]:
-            prefix, details = line.split(":")
-            prefix = prefix.strip()
-            content, metadata = self.fetch_metadata(details)
-            settings = content.split()
-            
-            if prefix in ("hub", "start_hub", "end_hub"):
-                if len(settings) != 3:
-                    print("[ERROR] Not the right number of arguments, "
-                          " You need 'name' 'pos one' 'pos two'")
-                    sys.exit(1)
-                self.generate_hub(prefix, settings[0], settings[1], settings[2], metadata)
-                
-            # print(f"PREFIX ===> {prefix}")
-            # print(f"CONTENT ====> {details}")
-            #     print(f"THAT'S META_DATA {metadata}")
-            #     if metadata:
-            #         options = self.get_metadata_attributes(metadata)
-            #     self.generate_hub(prefix, content[0], content[1], content[2], options)
-            # if "connection" in prefix:
-            #     content: list = details.split()
-            #     names = content[0].split("-")
-            #     print(names)
-            #     if metadata:
-            #         options = self.get_metadata_attributes(metadata)
-            #     self.generate_connections(names[0], names[1])
-                
-                
-        # print(self.connections)
-        # print(f"start_hub => {self.start_hub}")
-        # print(f"end hub => {self.end_hub}")
+            for line in lines[1:]:
+                prefix, details = line.split(":")
+                prefix = prefix.strip()
+                content, metadata = self.fetch_metadata(details)
+                settings = content.split()
 
+                if prefix in ("hub", "start_hub", "end_hub"):
+                    if len(settings) != 3:
+                        print(settings)
+                        print("[ERROR] Not the right number of arguments, "
+                              " You need 'name' 'pos one' 'pos two'")
+                        sys.exit(1)
+                    self.generate_hub(prefix, settings[0],
+                                      settings[1], settings[2], metadata)
+                elif prefix in ("connection"):
+                    if len(settings) != 1:
+                        print("[ERROR][CONNECTION] Not the right number of"
+                              " arguments, e.g: 'name_hub1-name_hub2'")
+                        sys.exit(1)
+                    self.generate_connection(settings[0], metadata)
+            for i, hub in enumerate(self.hubs, 1):
+                print(f"Hub {i}: {hub}")
 
-        # return keys_values
-    
-    # def fetch_hub_datas(self):
-    #     raw_hubs = self.fetch_infos()
-
-    #     # datas = self.split_keys_values()
-    #     # for data in datas:
-    #     #     if data == "nb_drones":
-    #     #         drones = datas[data]
-    #     #         self.nb_drones = int(drones)
-    #     #     elif data == "start_hub":
-    #     #         name = datas[data].endswith(" ")
-
+            for j, connection in enumerate(self.connections, 1):
+                print(f"Connection {j}: {connection}")
+        except Exception as e:
+            print(f"[ERROR]{e}")
 
     def fetch_metadata(self, details: str) -> tuple[str, dict[str, str]]:
         meta_data: dict[str, str] = {}
@@ -105,39 +85,15 @@ class MapParser:
                     print("Metadata must be '[details=infos]'")
                     sys.exit(1)
                 key, value = part.split("=")
+                if key not in ("zone", "color",
+                               "max_drones", "max_link_capacity"):
+                    raise ValueError(f"[METADATA] {key} "
+                                     "is an unknown type of metadata")
                 meta_data[key] = value
-
         else:
             main_settings = details
             meta_content = None
         return main_settings, meta_data
-    
-    # def get_metadata_attributes(self, metadata: str) -> None:
-    #     try:
-    #         meta = metadata.strip("[]")
-    #         parts = meta.split()
-    #         datas = {}
-    #         for part in parts:
-    #             if "=" not in part:
-    #                 raise ValueError("Metadatas must be given as [optional=data optional=data]")
-    #             else:
-    #                 key, value = part.split("=")
-    #             if key == "zone":
-    #                 datas.setdefault(key, value)
-    #             elif key == "color":
-    #                 datas.setdefault(key, value)
-    #             elif key == "max_drones":
-    #                 datas.setdefault(key, value)
-    #             elif key == "max_link_capacity":
-    #                 datas.setdefault(key, value)
-    #             else:
-    #                 raise ValueError("Option unknown make sure to add"
-    #                                  " the right options")
-    #     except Exception as e:
-    #         print(f"[Error] {e}")
-    #         sys.exit(1)
-    #     print(f"\n\n\n{datas.items()}\n\n\n")
-        # return datas
 
     def generate_hub(self, prefix: str,
                      name_hub: str, row: str, col: str, metadata: dict) -> None:
@@ -147,72 +103,84 @@ class MapParser:
         if name_hub in self.hubs:
             print(f"[Error] Hub called {name_hub} already register.")
             sys.exit(1)
-        zones = {
-                
-                "restricted": ZoneType.RESTRICTED.value,
-                "blocked": ZoneType.BLOCKED.value,
-                "priority": ZoneType.PRIORITY.value
-                }
+
+        pos: tuple[int, int] = (int(row), int(col))
+        zone_data = metadata.get("zone")
+        if not zone_data:
+            zone = ZoneType.NORMAL.value
+        elif zone_data == "normal":
+            zone = ZoneType.NORMAL.value
+        elif zone_data == "blocked":
+            zone = ZoneType.BLOCKED.value
+        elif zone_data == "restricted":
+            zone = ZoneType.RESTRICTED.value
+        elif zone_data == "priority":
+            zone = ZoneType.PRIORITY.value
+        else:
+            raise ValueError(f"{zone_data} Zone type unknown")
+
+        color_data = metadata.get("color")
+        if color_data == "red":
+            color_hub = Color.RED.value
+        elif color_data == "purple":
+            color_hub = Color.PURPLE.value
+        elif color_data == "yellow":
+            color_hub = Color.YELLOW.value
+        elif color_data == "brown":
+            color_hub = Color.BROWN.value
+        elif color_data == "blue":
+            color_hub = Color.BLUE.value
+        elif color_data == "green":
+            color_hub = Color.GREEN.value
+        else:
+            raise ValueError("Color unknown, make sure to "
+                             "write on lowercase.")
+            
+        max_drones_hub = metadata.get("max_drones", 1)
+        hub = Hub(
+            name=name_hub,
+            zone_type=zone,
+            color=color_hub,
+            position=pos,
+            max_drones=max_drones_hub
+        )
+        self.hubs.setdefault(name_hub, hub)
+        if prefix == "start_hub" and self.start_hub:
+            raise ValueError("There is already a start hub register.")
+        self.start_hub = hub
+        if prefix == "endhub" and self.end_hub:
+            raise ValueError("There is already an end hub register.")
+        self.end_hub = hub
+
+    def generate_connection(self, settings: str, metadata: dict[str, str]) -> None:
         try:
-            pos: tuple[int, int] = (int(row), int(col))
-            zone_data = metadata.get("zone")
-            if zone_data == "normal":
-                zone = ZoneType.NORMAL.value,
-            elif zone_data == "blocked":
-                zone = ZoneType.BLOCKED.value
-            elif zone_data == "restricted":
-                zone = ZoneType.RESTRICTED.value
-            elif zone_data == "priority":
-                zone = ZoneType.PRIORITY.value
-            else:
-                raise ValueError("Zone type unknown")
-            max_drones = metadata.get("max_drones", 1)
-                
-            # if "color" in metadata:
-            #     if metadata["color"] not in Color:
-            #         raise ValueError("Unknown color")
-            #     color_choose = Color(metadata["color"])
-            #     for color in Color:
-            #         if metadata["color"] == color:
-            #             hub_color = color_choose.value
-            # # if metadata["color"] in metadata:
-                
-            hub = Hub(name=name_hub,
-                      zone_type=zone,
-                    #   color=hub_color,
-                      position=pos
-                      )
-            if not hub:
-                print("Cannot create the hub, not found enough datas.")
-                sys.exit(1)
-            self.hubs.setdefault(name_hub, hub)
-            if prefix == "start_hub":
-                self.start_hub = hub
-            if prefix == "end_hub":
-                self.end_hub = hub
-            
-        except Exception as e:
-            print(f"[Error] {e}")
-            sys.exit(1)
-            
-    def generate_connections(self, name_one: str, name_two: str) -> None:
-        try:
-            link = []
-            for hub in self.hubs:
-                if hub.name == name_one:
-                    link.append(hub)
-                if hub.name == name_two:
-                    link.append(hub)
-            if len(link) != 2:
-                raise ValueError("The connection needs 2 hubs")
-            
+            if "-" not in settings:
+                raise ValueError("[CONNECTION] Names must be separate by '-'")
+            if settings in self.connections:
+                raise ValueError("[CONNECTION] Connection already register.")
+            print(settings)
+            names = settings.split("-")
+            name_one = names[0].strip()
+            name_two = names[1].strip()
+            if len(names) != 2:
+                raise ValueError("[CONNECTION] The connection needs 2 hubs")
+            if name_one not in self.hubs:
+                raise ValueError(f"[CONNECTION]{name_one}"
+                                 " not found in our datas.")
+            if name_two not in self.hubs:
+                raise ValueError(f"[CONNECTION]{name_two}"
+                                 " not found in our datas.")
+            hub_a = self.hubs[name_one]
+            hub_b = self.hubs[name_two]
+            max_capacity = metadata.get("max_link_capacity", 1)
             connect = Connection(hub_name_a=name_one,
-                                    hub_name_b=name_two,
-                                    zones=link
-                                    ) 
-            self.connections.append(connect)
+                                 hub_name_b=name_two,
+                                 hubs=[hub_a, hub_b],
+                                 max_link_capacity=max_capacity
+                                 )
+            self.connections.setdefault(settings, connect)
         except Exception as e:
-            print(f"[Error] {e}")
+            print(f"[ERROR]{e}")
         
 
 

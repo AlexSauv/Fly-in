@@ -13,18 +13,15 @@ class ZoneType(Enum):
 
 
 class Color(Enum):
-    GREEN = "32"
-    RED = "31"
     CYAN = "36"
-    PURPLE = "35"
     BLUE = "34"
-    GREEN_GRASS = "38;2;34;139;34"
-    RED_WINE = "38;5;88"
-    GOLD = '38;5;184'
+    GREEN = "38;2;34;139;34"
+    RED = "38;5;88"
+    YELLOW = '38;5;184'
     DARK_PINK = '38;5;176'
     BLACk = '38;5;232'
     BROWN = '38;5;94'
-    DARK_PURPLE = '38;5;54'
+    PURPLE = '38;5;54'
 
 
 class Drone(BaseModel):
@@ -38,7 +35,7 @@ class Drone(BaseModel):
 class Hub(BaseModel):
     name: str = Field(min_length=2, max_length=10)
     zone_type: ZoneType = Field(default=ZoneType.NORMAL.value)
-    color: Optional[str] = Field(default=None)
+    color: Optional[Color] = Field(default=Color.GREEN.value)
     position: tuple[int, int] = Field(default=None)
     max_drones: int = Field(default=1, ge=1)
 
@@ -46,11 +43,11 @@ class Hub(BaseModel):
 class Connection(BaseModel):
     hub_name_a: str = Field(min_length=1)
     hub_name_b: str = Field(min_length=1)
-    zones: list[Hub] = Field(max_length=2)
+    hubs: list[Hub] = Field(max_length=2)
     max_link_capacity: Optional[int] = Field(ge=1, default=1)
 
     @model_validator(mode="after")
     def check_name(self) -> Self:
         if self.hub_name_a == self.hub_name_b:
             raise ValueError("[Error] Both hub names must differ.")
-        return Self
+        return self
