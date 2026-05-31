@@ -1,8 +1,13 @@
 
-from enum import Enum
-from typing import Optional
-from typing_extensions import Self
-from pydantic import BaseModel, Field, model_validator, ValidationError
+import sys
+try:
+    from enum import Enum
+    from typing import Optional
+    from typing_extensions import Self
+    from pydantic import BaseModel, Field, model_validator
+except ImportError:
+    print("Make sure to use: - make install before - make run")
+    sys.exit(1)
 
 
 class ZoneType(Enum):
@@ -34,9 +39,9 @@ class Drone(BaseModel):
 
 class Hub(BaseModel):
     name: str = Field(min_length=2, max_length=10)
-    zone_type: ZoneType = Field(default=ZoneType.NORMAL.value)
-    color: Optional[Color] = Field(default=Color.GREEN.value)
-    position: tuple[int, int] = Field(default=None)
+    zone_type: str = Field(default=ZoneType.NORMAL.value)
+    color: Optional[str] = Field(default=Color.GREEN.value)
+    position: tuple[int, int]
     max_drones: int = Field(default=1, ge=1)
 
 
@@ -44,7 +49,7 @@ class Connection(BaseModel):
     hub_name_a: str = Field(min_length=1)
     hub_name_b: str = Field(min_length=1)
     hubs: list[Hub] = Field(max_length=2)
-    max_link_capacity: Optional[int] = Field(ge=1, default=1)
+    max_link_capacity: int = Field(ge=1, default=1)
 
     @model_validator(mode="after")
     def check_name(self) -> Self:

@@ -1,14 +1,15 @@
-from typing import Any, Optional
+from typing import Optional
 from utils import Hub, Connection, ZoneType, Color
 import re
 import sys
+
 
 class MapParser:
     def __init__(self, name_file: str):
         self.name_file = name_file
         self.nb_drones: int = 0
         self.hubs: dict[str, Hub] = {}
-        self.connections: dict[str, list[Connection]] = {}
+        self.connections: dict[str, Connection] = {}
         self.start_hub: Optional[Hub] = None
         self.end_hub: Optional[Hub] = None
 
@@ -21,7 +22,8 @@ class MapParser:
                     if not cleaned_line or cleaned_line.startswith("#"):
                         continue
                     if ":" not in cleaned_line:
-                        print(f"[Error] Line {line_num} The format is 'key:value [optional=detail]'")
+                        print(f"[Error] Line {line_num} The format is "
+                              "'key:value [optional=detail]'")
                         sys.exit(1)
 
                     settings.append(cleaned_line)
@@ -96,7 +98,8 @@ class MapParser:
         return main_settings, meta_data
 
     def generate_hub(self, prefix: str,
-                     name_hub: str, row: str, col: str, metadata: dict) -> None:
+                     name_hub: str, row: str,
+                     col: str, metadata: dict[str, str]) -> None:
         if "-" in name_hub:
             print("[Error] Hub name must not contains '-'.")
             sys.exit(1)
@@ -135,8 +138,8 @@ class MapParser:
         else:
             raise ValueError("Color unknown, make sure to "
                              "write on lowercase.")
-            
-        max_drones_hub = metadata.get("max_drones", 1)
+
+        max_drones_hub = int(metadata.get("max_drones", 1))
         hub = Hub(
             name=name_hub,
             zone_type=zone,
@@ -152,7 +155,8 @@ class MapParser:
             raise ValueError("There is already an end hub register.")
         self.end_hub = hub
 
-    def generate_connection(self, settings: str, metadata: dict[str, str]) -> None:
+    def generate_connection(self, settings: str,
+                            metadata: dict[str, str]) -> None:
         try:
             if "-" not in settings:
                 raise ValueError("[CONNECTION] Names must be separate by '-'")
@@ -172,7 +176,7 @@ class MapParser:
                                  " not found in our datas.")
             hub_a = self.hubs[name_one]
             hub_b = self.hubs[name_two]
-            max_capacity = metadata.get("max_link_capacity", 1)
+            max_capacity = int(metadata.get("max_link_capacity", 1))
             connect = Connection(hub_name_a=name_one,
                                  hub_name_b=name_two,
                                  hubs=[hub_a, hub_b],
@@ -181,7 +185,6 @@ class MapParser:
             self.connections.setdefault(settings, connect)
         except Exception as e:
             print(f"[ERROR]{e}")
-        
 
 
 def main() -> None:

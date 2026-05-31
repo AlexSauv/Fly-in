@@ -1,19 +1,26 @@
-NAME= fly_in.py
-PYTHON= poetry run python3
-MYPY= poetry run mypy
-FLAKE8= poetry run flake8
-CONFIG_FILE=config.txt
+NAME= parser.py
+PY= python3
+MYPY= mypy
+FLAKE8= flake8
+PYDANTIC = pydantic
+MLX = mlx-2.2-py3-none-any.whl
 
 .PHONY: install run debug lint lint-strict clean
 
 install:
-	@poetry install
+	python -m venv venv
+	./venv/bin/pip install $(MYPY) $(FLAKE8) $(PYDANTIC)
+	./venv/bin/pip install $(MLX)
+	
 
 run:
-	@$(PYTHON) $(NAME) $(CONFIG_FILE)
+	./venv/bin/$(PY) $(NAME) $(ARGS)
 
 debug:
-	@$(PYTHON) -m pdb $(NAME) $(CONFIG_FILE)
+	./venv/bin/$(PY) -m pdb $(NAME) $(ARGS)
+
+clean:
+	rm -rf __pycache__ .mypy__cache
 
 lint:
 	@$(FLAKE8) .
@@ -22,6 +29,3 @@ lint:
 lint-strict:
 	@$(FLAKE8) .
 	@$(MYPY) . --strict
-
-clean:
-	rm -rf .__pycache__ .mypy__cache
