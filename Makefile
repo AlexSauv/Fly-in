@@ -3,15 +3,13 @@ PY= python3
 MYPY= mypy
 FLAKE8= flake8
 PYDANTIC = pydantic
-MLX = mlx-2.2-py3-none-any.whl
+PYGAME = pygame
 
 .PHONY: install run debug lint lint-strict clean
 
 install:
 	python -m venv venv
-	./venv/bin/pip install $(MYPY) $(FLAKE8) $(PYDANTIC)
-	./venv/bin/pip install $(MLX)
-	
+	./venv/bin/pip install $(MYPY) $(FLAKE8) $(PYDANTIC) $(PYGAME)	
 
 run:
 	./venv/bin/$(PY) $(NAME) $(ARGS)

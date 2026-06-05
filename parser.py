@@ -67,11 +67,11 @@ class MapParser:
                               " arguments, e.g: 'name_hub1-name_hub2'")
                         sys.exit(1)
                     self.generate_connection(settings[0], metadata)
-            for i, hub in enumerate(self.hubs, 1):
-                print(f"Hub {i}: {hub}")
+            # for i, hub in enumerate(self.hubs, 1):
+            #     print(f"Hub {i}: {hub}")
 
-            for j, connection in enumerate(self.connections, 1):
-                print(f"Connection {j}: {connection}")
+            # for j, connection in enumerate(self.connections, 1):
+            #     print(f"Connection {j}: {connection}")
         except Exception as e:
             print(f"[ERROR]{e}")
 
@@ -123,6 +123,8 @@ class MapParser:
             raise ValueError(f"{zone_data} Zone type unknown")
 
         color_data = metadata.get("color")
+        if not color_data:
+            color_hub = Color.RED.value
         if color_data == "red":
             color_hub = Color.RED.value
         elif color_data == "purple":
@@ -187,13 +189,13 @@ class MapParser:
             print(f"[ERROR]{e}")
 
 
-def main() -> None:
-    settings = MapParser('config.txt')
-    settings.get_main_settings()
-    # print(f"Key {test} ==> {test}")
-    # print(settings.nb_drones)
-    # settings.fetch_hub_datas()
+# def main() -> None:
+    
+#     settings.get_main_settings()
+#     # print(f"Key {test} ==> {test}")
+#     # print(settings.nb_drones)
+#     # settings.fetch_hub_datas()
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

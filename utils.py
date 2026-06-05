@@ -18,15 +18,15 @@ class ZoneType(Enum):
 
 
 class Color(Enum):
-    CYAN = "36"
-    BLUE = "34"
-    GREEN = "38;2;34;139;34"
-    RED = "38;5;88"
-    YELLOW = '38;5;184'
-    DARK_PINK = '38;5;176'
-    BLACk = '38;5;232'
-    BROWN = '38;5;94'
-    PURPLE = '38;5;54'
+    CYAN = "36m47"
+    BLUE = "blue"
+    GREEN = "green"
+    RED = "red"
+    YELLOW = 'yellow'
+    DARK_PINK = '38;5;176m47'
+    BLACk = '38;5;232m47'
+    BROWN = '38;5;94m47'
+    PURPLE = 'purple'
 
 
 class Drone(BaseModel):
