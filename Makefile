@@ -1,4 +1,4 @@
-NAME= parser.py
+NAME= display.py
 PY= python3
 MYPY= mypy
 FLAKE8= flake8
@@ -8,7 +8,7 @@ PYGAME = pygame
 .PHONY: install run debug lint lint-strict clean
 
 install:
-	python -m venv venv
+	python3 -m venv venv
 	./venv/bin/pip install $(MYPY) $(FLAKE8) $(PYDANTIC) $(PYGAME)	
 
 run:

@@ -24,8 +24,8 @@ class Color(Enum):
     RED = "red"
     YELLOW = 'yellow'
     DARK_PINK = '38;5;176m47'
-    BLACk = '38;5;232m47'
-    BROWN = '38;5;94m47'
+    BLACK = '38;5;232m47'
+    ORANGE = 'orange'
     PURPLE = 'purple'
 
 
@@ -38,10 +38,11 @@ class Drone(BaseModel):
 
 
 class Hub(BaseModel):
-    name: str = Field(min_length=2, max_length=10)
+    name: str = Field(min_length=2, max_length=30)
     zone_type: str = Field(default=ZoneType.NORMAL.value)
     color: Optional[str] = Field(default=Color.GREEN.value)
     position: tuple[int, int]
+    drones: int = Field(default=0)
     max_drones: int = Field(default=1, ge=1)
 
 

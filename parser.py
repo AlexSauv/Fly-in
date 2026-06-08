@@ -61,17 +61,14 @@ class MapParser:
                         sys.exit(1)
                     self.generate_hub(prefix, settings[0],
                                       settings[1], settings[2], metadata)
+                    
                 elif prefix in ("connection"):
                     if len(settings) != 1:
                         print("[ERROR][CONNECTION] Not the right number of"
                               " arguments, e.g: 'name_hub1-name_hub2'")
                         sys.exit(1)
                     self.generate_connection(settings[0], metadata)
-            # for i, hub in enumerate(self.hubs, 1):
-            #     print(f"Hub {i}: {hub}")
 
-            # for j, connection in enumerate(self.connections, 1):
-            #     print(f"Connection {j}: {connection}")
         except Exception as e:
             print(f"[ERROR]{e}")
 
@@ -131,14 +128,14 @@ class MapParser:
             color_hub = Color.PURPLE.value
         elif color_data == "yellow":
             color_hub = Color.YELLOW.value
-        elif color_data == "brown":
-            color_hub = Color.BROWN.value
+        elif color_data == "orange":
+            color_hub = Color.ORANGE.value
         elif color_data == "blue":
             color_hub = Color.BLUE.value
         elif color_data == "green":
             color_hub = Color.GREEN.value
         else:
-            raise ValueError("Color unknown, make sure to "
+            raise ValueError(f" Color: {color_data} unknown, make sure to "
                              "write on lowercase.")
 
         max_drones_hub = int(metadata.get("max_drones", 1))
@@ -149,13 +146,17 @@ class MapParser:
             position=pos,
             max_drones=max_drones_hub
         )
+        setattr(hub, 'drones', self.nb_drones if prefix == "start_hub" else 0)
         self.hubs.setdefault(name_hub, hub)
-        if prefix == "start_hub" and self.start_hub:
+        if prefix == "start_hub" and not self.start_hub:
+            self.start_hub = hub
+        elif prefix == "start_hub" and self.start_hub:
             raise ValueError("There is already a start hub register.")
-        self.start_hub = hub
-        if prefix == "endhub" and self.end_hub:
+
+        if prefix == "end_hub" and not self.end_hub:
+            self.end_hub = hub
+        elif prefix == "end_hub" and self.end_hub:
             raise ValueError("There is already an end hub register.")
-        self.end_hub = hub
 
     def generate_connection(self, settings: str,
                             metadata: dict[str, str]) -> None:
