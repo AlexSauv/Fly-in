@@ -12,6 +12,7 @@ class MapParser:
         self.connections: dict[str, Connection] = {}
         self.start_hub: Optional[Hub] = None
         self.end_hub: Optional[Hub] = None
+        self.connected_to: dict[str, list[str]] = {}
 
     def fetch_infos(self) -> list[str]:
         settings: list[str] = []
@@ -186,6 +187,8 @@ class MapParser:
                                  max_link_capacity=max_capacity
                                  )
             self.connections.setdefault(settings, connect)
+            self.connected_to.setdefault(name_one, []).append(name_two)
+            self.connected_to.setdefault(name_two, []).append(name_one)
         except Exception as e:
             print(f"[ERROR]{e}")
 
