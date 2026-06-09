@@ -166,7 +166,6 @@ class MapParser:
                 raise ValueError("[CONNECTION] Names must be separate by '-'")
             if settings in self.connections:
                 raise ValueError("[CONNECTION] Connection already register.")
-            print(settings)
             names = settings.split("-")
             name_one = names[0].strip()
             name_two = names[1].strip()
