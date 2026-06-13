@@ -42,7 +42,7 @@ class Hub(BaseModel):
     zone_type: str = Field(default=ZoneType.NORMAL.value)
     color: Optional[str] = Field(default=Color.GREEN.value)
     position: tuple[int, int]
-    drones: list = Field(default=list)
+    drones: list[Drone] = Field(default=list)
     max_drones: int = Field(default=1, ge=1)
 
 

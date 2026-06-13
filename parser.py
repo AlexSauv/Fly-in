@@ -1,5 +1,5 @@
 from typing import Optional
-from utils import Hub, Connection, ZoneType, Color
+from utils import Hub, Connection, ZoneType, Color, Drone
 import re
 import sys
 
@@ -10,8 +10,8 @@ class MapParser:
         self.nb_drones: int = 0
         self.hubs: dict[str, Hub] = {}
         self.connections: dict[str, Connection] = {}
-        self.start_hub: Optional[Hub] = None
-        self.end_hub: Optional[Hub] = None
+        self.start_hub: Hub = None
+        self.end_hub: Hub = None
         self.connected_to: dict[str, list[str]] = {}
 
     def fetch_infos(self) -> list[str]:
@@ -140,15 +140,22 @@ class MapParser:
                              "write on lowercase.")
 
         max_drones_hub = int(metadata.get("max_drones", 1))
+        if prefix == "start_hub":
+            max_drones_hub = self.nb_drones
+        elif prefix == "end_hub":
+            max_drones_hub = self.nb_drones
+        drones_init: list[Drone] = []
         hub = Hub(
             name=name_hub,
             zone_type=zone,
             color=color_hub,
             position=pos,
+            drones=drones_init,
             max_drones=max_drones_hub
         )
-        setattr(hub, 'drones', self.nb_drones if prefix == "start_hub" else 0)
-        self.hubs.setdefault(name_hub, hub)
+        if prefix == "start_hub":
+            hub.drones = [Drone(id=f"drone_{i}", current_hub=pos) for i in range(1, self.nb_drones + 1)]
+        # setattr(hub, 'drones', self.nb_drones if prefix == "start_hub" else 0)
         if prefix == "start_hub" and not self.start_hub:
             self.start_hub = hub
         elif prefix == "start_hub" and self.start_hub:
@@ -158,6 +165,7 @@ class MapParser:
             self.end_hub = hub
         elif prefix == "end_hub" and self.end_hub:
             raise ValueError("There is already an end hub register.")
+        self.hubs.setdefault(name_hub, hub)
 
     def generate_connection(self, settings: str,
                             metadata: dict[str, str]) -> None:
@@ -189,7 +197,8 @@ class MapParser:
             self.connected_to.setdefault(name_one, []).append(name_two)
             self.connected_to.setdefault(name_two, []).append(name_one)
         except Exception as e:
-            print(f"[ERROR]{e}")
+            print(f"[ERROR][PARSER]{e}")
+            sys.exit(1)
 
 
 # def main() -> None:
