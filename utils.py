@@ -2,7 +2,6 @@
 import sys
 try:
     from enum import Enum
-    from typing import Optional
     from typing_extensions import Self
     from pydantic import BaseModel, Field, model_validator
 except ImportError:

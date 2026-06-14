@@ -3,6 +3,7 @@ from algorithm import Map
 from parser import MapParser
 from simulator import Manager
 
+
 class MapDisplay(arcade.Window):
     def __init__(self, width, height, title, simulation: Manager):
         self.simulation = simulation
@@ -46,6 +47,7 @@ class MapDisplay(arcade.Window):
                 arcade.draw_circle_filled(x, y, 40, color_rgb)
             else:
                 raise ValueError(f"[DISPLAY] {color} color not found")
+
 
 if __name__ == "__main__":
     try:

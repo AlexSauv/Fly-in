@@ -34,7 +34,7 @@ class Manager:
                     self.hub_reserve[
                         next_hub, next_turn] = self.hub_reserve.get(
                         (next_hub, next_turn), 0) + 1
-            
+
                 link = tuple(sorted((current_hub, next_hub)))
                 for turn in range(current_turn, next_turn):
                     self.link_reserve[
