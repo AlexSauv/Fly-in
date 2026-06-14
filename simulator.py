@@ -19,7 +19,7 @@ class Manager:
         end = self.map_fly.end_hub.name
 
         for drone in list(self.map_fly.hubs[start].drones):
-            path = self.pathfinder.shortest_path(
+            path = self.pathfinder.djikstra(
                 start, end, 0, self.hub_reserve,
                 self.link_reserve)
             if not path:

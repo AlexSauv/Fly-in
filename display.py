@@ -51,12 +51,15 @@ class MapDisplay(arcade.Window):
 
 if __name__ == "__main__":
     try:
-        map_parsing = MapParser("maps/challenger/01_the_impossible_dream.txt")
+        map_parsing = MapParser("maps/medium/01_dead_end_trap.txt")
         map_parsing.get_main_settings()
         map_fly = Map(map_parsing)
 
         simulation = Manager(map_fly)
         simulation.initiate_simulation()
+        while simulation.simulation_turn():
+            continue
+        print(simulation.turn)
         renderer = MapDisplay(3800, 2100, "Fly-in", simulation)
         arcade.run()
     except Exception as e:
