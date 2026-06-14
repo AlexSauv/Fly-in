@@ -1,4 +1,3 @@
-from typing import Optional
 from utils import Hub, Connection, ZoneType, Color, Drone
 import re
 import sys
@@ -40,12 +39,12 @@ class MapParser:
         try:
             lines: list[str] = self.fetch_infos()
             if not lines[0].startswith("nb_drones:"):
-                print("[Error] Setting file must begin with 'nb_drones:int'")
-                sys.exit(1)
+                raise ValueError(" Setting file must"
+                                 " begin with 'nb_drones:int'")
 
             self.nb_drones = int(lines[0].split(":")[1].strip())
             if self.nb_drones <= 0:
-                raise ValueError("[Error] 'nb_drones' must be a"
+                raise ValueError("[DRONE] nb_drones must be a"
                                  " positive integer")
 
             for line in lines[1:]:
@@ -56,24 +55,21 @@ class MapParser:
 
                 if prefix in ("hub", "start_hub", "end_hub"):
                     if len(settings) != 3:
-                        print(settings)
-                        print("[ERROR] Not the right number of arguments, "
-                              " You need 'name' 'pos one' 'pos two'")
-                        sys.exit(1)
+                        raise ValueError("[HUB] The format is not as expected")
+
                     self.generate_hub(prefix, settings[0],
                                       settings[1], settings[2], metadata)
-                    
+
                 elif prefix in ("connection"):
                     if len(settings) != 1:
-                        print("[ERROR][CONNECTION] Not the right number of"
-                              " arguments, e.g: 'name_hub1-name_hub2'")
-                        sys.exit(1)
+                        raise ValueError("[CONNECTION] The argument must "
+                                         "be given as: 'name_1-name_2'")
+
                     self.generate_connection(settings[0], metadata)
 
         except Exception as e:
             print(f"[ERROR][PARSER]{e}")
             sys.exit(1)
-
 
     def fetch_metadata(self, details: str) -> tuple[str, dict[str, str]]:
         meta_data: dict[str, str] = {}
@@ -101,10 +97,10 @@ class MapParser:
                      name_hub: str, row: str,
                      col: str, metadata: dict[str, str]) -> None:
         if "-" in name_hub:
-            print("[Error] Hub name must not contains '-'.")
+            print("[HUB] Hub name must not contains '-'.")
             sys.exit(1)
         if name_hub in self.hubs:
-            print(f"[Error] Hub called {name_hub} already register.")
+            print(f"[HUB] Hub called {name_hub} already register.")
             sys.exit(1)
 
         pos: tuple[int, int] = (int(row), int(col))
@@ -114,13 +110,13 @@ class MapParser:
         if hasattr(ZoneType, zone_data):
             zone = getattr(ZoneType, zone)
         else:
-            raise ValueError(f" Zone type: {zone_data} Zone type unknown")
+            raise ValueError(f"[ZONETYPE] {zone_data} Zone type unknown")
 
         color_data = metadata.get("color", "white").upper()
         if hasattr(Color, color_data):
             color_found = getattr(Color, color_data)
         else:
-            raise ValueError(f" Color: {color_data} unknown, make sure to "
+            raise ValueError(f"[COLOR] {color_data} unknown, make sure to "
                              "write on lowercase.")
 
         max_drones_hub = int(metadata.get("max_drones", 1))
@@ -129,6 +125,7 @@ class MapParser:
         elif prefix == "end_hub":
             max_drones_hub = self.nb_drones
         drones_init: list[Drone] = []
+
         hub = Hub(
             name=name_hub,
             zone_type=zone,
@@ -137,17 +134,22 @@ class MapParser:
             drones=drones_init,
             max_drones=max_drones_hub
         )
+
         if prefix == "start_hub":
-            hub.drones = [Drone(id=f"D{i}", current_hub=pos) for i in range(1, self.nb_drones + 1)]
+            hub.drones = [
+                Drone(id=f"D{i}",
+                      current_hub=pos) for i in range(
+                          1, self.nb_drones + 1)]
+
         if prefix == "start_hub" and not self.start_hub:
             self.start_hub = hub
         elif prefix == "start_hub" and self.start_hub:
-            raise ValueError("There is already a start hub register.")
+            raise ValueError("[HUB] There is already a start hub register.")
 
         if prefix == "end_hub" and not self.end_hub:
             self.end_hub = hub
         elif prefix == "end_hub" and self.end_hub:
-            raise ValueError("There is already an end hub register.")
+            raise ValueError("[HUB] There is already an end hub register.")
         self.hubs.setdefault(name_hub, hub)
 
     def generate_connection(self, settings: str,
@@ -164,30 +166,18 @@ class MapParser:
             raise ValueError("[CONNECTION] The connection needs 2 hubs")
         if name_one not in self.hubs:
             raise ValueError(f"[CONNECTION]{name_one}"
-                                " not found in our datas.")
+                             " not found in our datas.")
         if name_two not in self.hubs:
             raise ValueError(f"[CONNECTION]{name_two}"
-                                " not found in our datas.")
+                             " not found in our datas.")
         hub_a = self.hubs[name_one]
         hub_b = self.hubs[name_two]
         max_capacity = int(metadata.get("max_link_capacity", 1))
         connect = Connection(hub_name_a=name_one,
-                                hub_name_b=name_two,
-                                hubs=[hub_a, hub_b],
-                                max_link_capacity=max_capacity
-                                )
+                             hub_name_b=name_two,
+                             hubs=[hub_a, hub_b],
+                             max_link_capacity=max_capacity
+                             )
         self.connections.setdefault(link_name, connect)
         self.connected_to.setdefault(name_one, []).append(name_two)
         self.connected_to.setdefault(name_two, []).append(name_one)
-
-
-# def main() -> None:
-    
-#     settings.get_main_settings()
-#     # print(f"Key {test} ==> {test}")
-#     # print(settings.nb_drones)
-#     # settings.fetch_hub_datas()
-
-
-# if __name__ == "__main__":
-#     main()
