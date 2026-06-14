@@ -71,7 +71,9 @@ class MapParser:
                     self.generate_connection(settings[0], metadata)
 
         except Exception as e:
-            print(f"[ERROR]{e}")
+            print(f"[ERROR][PARSER]{e}")
+            sys.exit(1)
+
 
     def fetch_metadata(self, details: str) -> tuple[str, dict[str, str]]:
         meta_data: dict[str, str] = {}
@@ -106,35 +108,17 @@ class MapParser:
             sys.exit(1)
 
         pos: tuple[int, int] = (int(row), int(col))
-        zone_data = metadata.get("zone")
-        if not zone_data:
-            zone = ZoneType.NORMAL.value
-        elif zone_data == "normal":
-            zone = ZoneType.NORMAL.value
-        elif zone_data == "blocked":
-            zone = ZoneType.BLOCKED.value
-        elif zone_data == "restricted":
-            zone = ZoneType.RESTRICTED.value
-        elif zone_data == "priority":
-            zone = ZoneType.PRIORITY.value
-        else:
-            raise ValueError(f"{zone_data} Zone type unknown")
 
-        color_data = metadata.get("color")
-        if not color_data:
-            color_hub = Color.RED.value
-        if color_data == "red":
-            color_hub = Color.RED.value
-        elif color_data == "purple":
-            color_hub = Color.PURPLE.value
-        elif color_data == "yellow":
-            color_hub = Color.YELLOW.value
-        elif color_data == "orange":
-            color_hub = Color.ORANGE.value
-        elif color_data == "blue":
-            color_hub = Color.BLUE.value
-        elif color_data == "green":
-            color_hub = Color.GREEN.value
+        zone_data = metadata.get("zone", ZoneType.NORMAL.value).upper()
+        zone = zone_data
+        if hasattr(ZoneType, zone_data):
+            zone = getattr(ZoneType, zone)
+        else:
+            raise ValueError(f" Zone type: {zone_data} Zone type unknown")
+
+        color_data = metadata.get("color", "white").upper()
+        if hasattr(Color, color_data):
+            color_found = getattr(Color, color_data)
         else:
             raise ValueError(f" Color: {color_data} unknown, make sure to "
                              "write on lowercase.")
@@ -148,14 +132,13 @@ class MapParser:
         hub = Hub(
             name=name_hub,
             zone_type=zone,
-            color=color_hub,
+            color=color_found,
             position=pos,
             drones=drones_init,
             max_drones=max_drones_hub
         )
         if prefix == "start_hub":
-            hub.drones = [Drone(id=f"drone_{i}", current_hub=pos) for i in range(1, self.nb_drones + 1)]
-        # setattr(hub, 'drones', self.nb_drones if prefix == "start_hub" else 0)
+            hub.drones = [Drone(id=f"D{i}", current_hub=pos) for i in range(1, self.nb_drones + 1)]
         if prefix == "start_hub" and not self.start_hub:
             self.start_hub = hub
         elif prefix == "start_hub" and self.start_hub:
@@ -169,37 +152,33 @@ class MapParser:
 
     def generate_connection(self, settings: str,
                             metadata: dict[str, str]) -> None:
-        try:
-            if "-" not in settings:
-                raise ValueError("[CONNECTION] Names must be separate by '-'")
-            names = settings.split("-")
-            name_one = names[0].strip()
-            name_two = names[1].strip()
-            link_name = "-".join(sorted((name_one, name_two)))
-            if link_name in self.connections:
-                raise ValueError("[CONNECTION] Connection already register.")
-            if len(names) != 2:
-                raise ValueError("[CONNECTION] The connection needs 2 hubs")
-            if name_one not in self.hubs:
-                raise ValueError(f"[CONNECTION]{name_one}"
-                                 " not found in our datas.")
-            if name_two not in self.hubs:
-                raise ValueError(f"[CONNECTION]{name_two}"
-                                 " not found in our datas.")
-            hub_a = self.hubs[name_one]
-            hub_b = self.hubs[name_two]
-            max_capacity = int(metadata.get("max_link_capacity", 1))
-            connect = Connection(hub_name_a=name_one,
-                                 hub_name_b=name_two,
-                                 hubs=[hub_a, hub_b],
-                                 max_link_capacity=max_capacity
-                                 )
-            self.connections.setdefault(link_name, connect)
-            self.connected_to.setdefault(name_one, []).append(name_two)
-            self.connected_to.setdefault(name_two, []).append(name_one)
-        except Exception as e:
-            print(f"[ERROR][PARSER]{e}")
-            sys.exit(1)
+        if "-" not in settings:
+            raise ValueError("[CONNECTION] Names must be separate by '-'")
+        names = settings.split("-")
+        name_one = names[0].strip()
+        name_two = names[1].strip()
+        link_name = "-".join(sorted((name_one, name_two)))
+        if link_name in self.connections:
+            raise ValueError("[CONNECTION] Connection already register.")
+        if len(names) != 2:
+            raise ValueError("[CONNECTION] The connection needs 2 hubs")
+        if name_one not in self.hubs:
+            raise ValueError(f"[CONNECTION]{name_one}"
+                                " not found in our datas.")
+        if name_two not in self.hubs:
+            raise ValueError(f"[CONNECTION]{name_two}"
+                                " not found in our datas.")
+        hub_a = self.hubs[name_one]
+        hub_b = self.hubs[name_two]
+        max_capacity = int(metadata.get("max_link_capacity", 1))
+        connect = Connection(hub_name_a=name_one,
+                                hub_name_b=name_two,
+                                hubs=[hub_a, hub_b],
+                                max_link_capacity=max_capacity
+                                )
+        self.connections.setdefault(link_name, connect)
+        self.connected_to.setdefault(name_one, []).append(name_two)
+        self.connected_to.setdefault(name_two, []).append(name_one)
 
 
 # def main() -> None:

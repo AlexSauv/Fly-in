@@ -1,15 +1,15 @@
-NAME= simulator.py
+NAME= display.py
 PY= python3
 MYPY= mypy
 FLAKE8= flake8
 PYDANTIC = pydantic
-PYGAME = pygame
+ARCADE = arcade
 
 .PHONY: install run debug lint lint-strict clean
 
 install:
 	python3 -m venv venv
-	./venv/bin/pip install $(MYPY) $(FLAKE8) $(PYDANTIC) $(PYGAME)	
+	./venv/bin/pip install $(MYPY) $(FLAKE8) $(PYDANTIC) $(ARCADE)	
 
 run:
 	./venv/bin/$(PY) $(NAME) $(ARGS)

@@ -17,20 +17,22 @@ class Map:
 class PathFinder:
     def __init__(self, map: Map):
         self.map = map
-        self.cost = {"normal": 1,
-                     "priority": 1,
-                     'restricted': 2}
+        self.cost_turn = {"normal": 1,
+                          "priority": 1,
+                          'restricted': 2}
 
     def shortest_path(self, start: str, end: str, turn: int,
-                      reservation: dict[tuple[str, int], int],
-                      link_reservation: dict[tuple[tuple[str, str], int], int]) -> list[str]:
+                      reserve: dict[tuple[str, int], int],
+                      link_reserve: dict[tuple[tuple[str, str], int], int]) -> list[str]:
 
         visited = set()
-        waiting = [(0, turn, start, [(start, turn)])]
+        waiting: list[tuple[int, int, str, list[tuple[str, int]]]] = [
+            (turn, 0, start, [(start, turn)])
+        ]
 
         while waiting:
 
-            cost, current_turn, current_hub_name, path = heapq.heappop(waiting)
+            current_turn, priority_cost, current_hub_name, path = heapq.heappop(waiting)
             if current_hub_name == end:
                 return path
 
@@ -40,47 +42,49 @@ class PathFinder:
             visited.add(current_state)
 
             next_hubs = self.map.connected_to.get(current_hub_name, [])
-            for next_hub_name in next_hubs:
-                neighbor = self.map.hubs[next_hub_name]
+            for next_name in next_hubs:
+                neighbor = self.map.hubs[next_name]
                 if neighbor.zone_type == "blocked":
                     continue
 
-                zone_cost = self.cost.get(neighbor.zone_type, 1)
+                zone_cost = self.cost_turn.get(neighbor.zone_type, 1)
                 next_turn = current_turn + zone_cost
-                hub_approved = (next_hub_name in (start, end) or 
-                                reservation.get((next_hub_name,
-                                                  next_turn), 0)
-                                                    < neighbor.max_drones)
-                
-                link = tuple(sorted((current_hub_name, next_hub_name)))
 
-                link_capacity = 1
+                move_priority = 0 if neighbor.zone_type == "priority" else 1
+                next_priority = priority_cost + move_priority
+                hub_approved = (next_name in (start, end) or
+                                reserve.get((next_name,
+                                             next_turn), 0) < neighbor.max_drones)
+
+                link = tuple(sorted((current_hub_name, next_name)))
+
                 link_name = "-".join(link)
                 if self.map.connections[link_name]:
-                    link_capacity = self.map.connections[link_name].max_link_capacity
+                    lk_cap = self.map.connections[link_name].max_link_capacity
 
-                link_approved = max(link_reservation.get(link, turn) 
-                                    for turn in range(current_turn, next_turn)) < link_capacity
+                link_approved = max([link_reserve.get((link, turn), 0)
+                                    for turn in range(
+                                        current_turn, next_turn)]) < lk_cap
 
                 if hub_approved and link_approved:
-                    new_cost = cost + zone_cost
-                    if neighbor.zone_type == "priority":
-                        new_cost -= 0.5
-                    heapq.heappush(waiting, (new_cost, next_turn,
-                                             next_hub_name,
-                                             path + [(next_hub_name, next_turn)]))
+                    heapq.heappush(waiting, (next_turn,
+                                             next_priority,
+                                             next_name,
+                                             path + [(next_name, next_turn)]))
 
             if current_hub_name != end:
                 current_hub_stay = self.map.hubs[current_hub_name]
                 next_turn_stay = current_turn + 1
-                available_stay = reservation.get((current_hub_name,
-                                                  next_turn_stay), 0)
+                available_stay = reserve.get((current_hub_name,
+                                              next_turn_stay), 0)
 
                 if (current_hub_name == start or
                         available_stay < current_hub_stay.max_drones):
-                    heapq.heappush(waiting, (cost + 1, next_turn_stay,
+                    heapq.heappush(waiting, (next_turn_stay,
+                                             priority_cost + 1,
                                              current_hub_name,
-                                             path + [(current_hub_name, next_turn_stay)]))
+                                             path + [(current_hub_name,
+                                                      next_turn_stay)]))
         return []
 
 

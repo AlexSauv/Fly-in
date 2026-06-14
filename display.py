@@ -1,96 +1,61 @@
-import pygame
-from parser import MapParser, Connection, Hub
+import arcade
+from algorithm import Map
+from parser import MapParser
+from simulator import Manager
 
-class MapDisplay:
-    def __init__(self, config: MapParser, width, height):
-        self.config = config
-        self.width = width
-        self.height = height
-        self.scale = 60
-        self.offset_x = 0.0
-        self.offset_y = 0.0
-        self.calculate_center()
+class MapDisplay(arcade.Window):
+    def __init__(self, width, height, title, simulation: Manager):
+        self.simulation = simulation
+        self.map_fly = simulation.map_fly
+        super().__init__(width, height, title)
+        arcade.set_background_color(arcade.color.BLACK)
 
-    def calculate_center(self) -> None:
-        if not self.config.hubs:
-            raise ValueError("[RENDER] There is no hubs established.")
-        x_hubs = [hub.position[0] for hub in self.config.hubs.values()]
-        y_hubs = [hub.position[1] for hub in self.config.hubs.values()]
+    def get_center(self) -> tuple[int, int]:
+        hubs = map_fly.hubs
 
-        min_x, max_x = min(x_hubs), max(x_hubs)
-        min_y, max_y = min(y_hubs), max(y_hubs)
+        min_x = min([hubs[hub].position[0] for hub in hubs])
+        min_y = min([hubs[hub].position[1] for hub in hubs])
+        max_x = max([hubs[hub].position[0] for hub in hubs])
+        max_y = max([hubs[hub].position[1] for hub in hubs])
 
-        map_width = max(max_x - min_x, 1)
-        map_height = max(max_y - min_y, 1)
-        
-        padding = 60
-        scale_x = (self.width - 2 * padding) / map_width
-        scale_y = (self.height - 2 * padding) / map_height
+        center_x = (min_x + max_x) / 2
+        center_y = (min_y + max_y) / 2
 
-        self.scale = min(scale_x, scale_y)
-        mid_x = (min_x + max_x) / 2
-        mid_y = (min_y + max_y) / 2
+        offset_x = (self.width / 2) - (center_x * 175)
+        offset_y = (self.height / 2) - (center_y * 175)
 
-        self.offset_x = (self.width / 2) - (mid_x * self.scale)
-        self.offset_y = (self.height / 2) - (mid_y * self.scale)
+        return offset_x, offset_y
 
-    def get_map_size(self, pos):
-        pos_x = pos[0]
-        pos_y = pos[1]
+    def on_draw(self):
+        self.clear()
+        hubs = map_fly.hubs
 
-        map_x = int(pos_x * self.scale + self.offset_x)
-        map_y = int(pos_y * self.scale + self.offset_y)
-        return (map_x, map_y)
-
-    def display_connection(self, surface, connect: Connection):        
-        start_line = self.get_map_size(connect.hubs[0].position)
-        end_line = self.get_map_size(connect.hubs[1].position)
-        pygame.draw.line(surface, (245, 245, 245), start_line, end_line, 6)
-    
-    def display_hub(self, surface: pygame.Surface, hub: Hub, 
-                    font: pygame.font.Font):
-        cx, cy = self.get_map_size(hub.position)
-        try:
-            color = pygame.Color(hub.color)
-        except ValueError:
-            color = pygame.Color("blue")
-        pygame.draw.circle(surface, (255, 255, 255), (cx, cy), 24, 1)
-        pygame.draw.circle(surface, color, (cx, cy), 22)
-        # name_surf = font.render(hub.name, True, (255, 255, 255))
-        # total_drones = font.render(f"{hub.name} drones: {hub.drones}", True, (255, 255, 255))
-        # surface.blit(name_surf, (cx - name_surf.get_width() // 2, cy - 50))
-        # surface.blit(total_drones, (50, self.height // 2 + gap))
-        # if hub.drones > 0:
-        #     surface.blit(drone_img, (cx, cy), )
-
-    def main_display(self):
-        drone = pygame.image.load("drone_one.png")
-        pygame.init()
-        pygame.font.init()
-        font_small = pygame.font.SysFont("Arial", 16, bold=True)
-        screen = pygame.display.set_mode((self.width, self.height))
-        pygame.display.set_caption("Fly_in - by Alsauvan")
-        clock = pygame.time.Clock()
-
-        while True:
-            screen.fill((15, 23, 42))
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    raise SystemExit
-
-            for connect in self.config.connections.values():
-                self.display_connection(screen, connect)
-
-            for hub in self.config.hubs.values():
-                self.display_hub(screen, hub, font_small)
-                    
-            pygame.display.flip()
-            clock.tick(60)
-
+        center_x, center_y = self.get_center()
+        for hub in hubs:
+            x = hubs[hub].position[0] * 175 + center_x
+            y = hubs[hub].position[1] * 175 + center_y
+            color = hubs[hub].color.upper()
+            if color.startswith("#"):
+                hex_val = color.lstrip("#")
+                color_rgb = (int(hex_val[0:2], 16),
+                             int(hex_val[2:4], 16),
+                             int(hex_val[4:6], 16))
+                arcade.draw_circle_filled(x, y, 40, color_rgb)
+            elif hasattr(arcade.color, color):
+                color_rgb = getattr(arcade.color, color)
+                arcade.draw_circle_filled(x, y, 40, color_rgb)
+            else:
+                raise ValueError(f"[DISPLAY] {color} color not found")
 
 if __name__ == "__main__":
-    settings = MapParser('maps/easy/02_simple_fork.txt')
-    settings.get_main_settings()
-    graph = MapDisplay(settings, 1244, 900)
-    graph.main_display()
+    try:
+        map_parsing = MapParser("maps/challenger/01_the_impossible_dream.txt")
+        map_parsing.get_main_settings()
+        map_fly = Map(map_parsing)
+
+        simulation = Manager(map_fly)
+        simulation.initiate_simulation()
+        renderer = MapDisplay(3800, 2100, "Fly-in", simulation)
+        arcade.run()
+    except Exception as e:
+        print(e)
