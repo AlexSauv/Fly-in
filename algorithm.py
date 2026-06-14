@@ -22,9 +22,11 @@ class PathFinder:
                      'restricted': 2}
 
     def shortest_path(self, start: str, end: str, turn: int,
-                      reservation: dict[(str, int), int]) -> list[str]:
+                      reservation: dict[tuple[str, int], int],
+                      link_reservation: dict[tuple[tuple[str, str], int], int]) -> list[str]:
+
         visited = set()
-        waiting = [(0, turn, start, [start])]
+        waiting = [(0, turn, start, [(start, turn)])]
 
         while waiting:
 
@@ -36,21 +38,37 @@ class PathFinder:
             if current_state in visited:
                 continue
             visited.add(current_state)
+
             next_hubs = self.map.connected_to.get(current_hub_name, [])
             for next_hub_name in next_hubs:
                 neighbor = self.map.hubs[next_hub_name]
                 if neighbor.zone_type == "blocked":
                     continue
+
                 zone_cost = self.cost.get(neighbor.zone_type, 1)
                 next_turn = current_turn + zone_cost
-                taken_places = reservation.get((next_hub_name, next_turn), 0)
+                hub_approved = (next_hub_name in (start, end) or 
+                                reservation.get((next_hub_name,
+                                                  next_turn), 0)
+                                                    < neighbor.max_drones)
+                
+                link = tuple(sorted((current_hub_name, next_hub_name)))
 
-                if (next_hub_name == start or next_hub_name == end or
-                        taken_places < neighbor.max_drones):
+                link_capacity = 1
+                link_name = "-".join(link)
+                if self.map.connections[link_name]:
+                    link_capacity = self.map.connections[link_name].max_link_capacity
+
+                link_approved = max(link_reservation.get(link, turn) 
+                                    for turn in range(current_turn, next_turn)) < link_capacity
+
+                if hub_approved and link_approved:
                     new_cost = cost + zone_cost
+                    if neighbor.zone_type == "priority":
+                        new_cost -= 0.5
                     heapq.heappush(waiting, (new_cost, next_turn,
                                              next_hub_name,
-                                             path + [next_hub_name]))
+                                             path + [(next_hub_name, next_turn)]))
 
             if current_hub_name != end:
                 current_hub_stay = self.map.hubs[current_hub_name]
@@ -62,7 +80,7 @@ class PathFinder:
                         available_stay < current_hub_stay.max_drones):
                     heapq.heappush(waiting, (cost + 1, next_turn_stay,
                                              current_hub_name,
-                                             path + [current_hub_name]))
+                                             path + [(current_hub_name, next_turn_stay)]))
         return []
 
 

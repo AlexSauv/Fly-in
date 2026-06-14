@@ -172,11 +172,12 @@ class MapParser:
         try:
             if "-" not in settings:
                 raise ValueError("[CONNECTION] Names must be separate by '-'")
-            if settings in self.connections:
-                raise ValueError("[CONNECTION] Connection already register.")
             names = settings.split("-")
             name_one = names[0].strip()
             name_two = names[1].strip()
+            link_name = "-".join(sorted((name_one, name_two)))
+            if link_name in self.connections:
+                raise ValueError("[CONNECTION] Connection already register.")
             if len(names) != 2:
                 raise ValueError("[CONNECTION] The connection needs 2 hubs")
             if name_one not in self.hubs:
@@ -193,7 +194,7 @@ class MapParser:
                                  hubs=[hub_a, hub_b],
                                  max_link_capacity=max_capacity
                                  )
-            self.connections.setdefault(settings, connect)
+            self.connections.setdefault(link_name, connect)
             self.connected_to.setdefault(name_one, []).append(name_two)
             self.connected_to.setdefault(name_two, []).append(name_one)
         except Exception as e:
