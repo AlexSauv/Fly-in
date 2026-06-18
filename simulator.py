@@ -1,13 +1,13 @@
 from algorithm import PathFinder, Map
-
+from parser import MapParser
 
 class Manager:
     def __init__(self, map_fly: Map):
         self.map_fly = map_fly
         self.pathfinder = PathFinder(map_fly)
         self.turn: int = 0
-        self.hub_reserve: dict[tuple[str, int], int] = {}
-        self.link_reserve:  dict[tuple[str, int], int] = {}
+        self.planned_hub: dict[tuple[str, int], int] = {}
+        self.planned_link:  dict[tuple[str, int], int] = {}
         self.drones_path: dict[str, list[str]] = {}
         self.drone_step_index: dict[str, int] = {}
         self.cost = {"normal": 1,
@@ -20,8 +20,8 @@ class Manager:
 
         for drone in list(self.map_fly.hubs[start].drones):
             path = self.pathfinder.djikstra(
-                start, end, 0, self.hub_reserve,
-                self.link_reserve)
+                start, end, 0, self.planned_hub,
+                self.planned_link)
             if not path:
                 raise ValueError(f"[MANAGER] Path not found for {drone.id}.")
 
@@ -31,14 +31,14 @@ class Manager:
             for (current_hub, current_turn), (next_hub, next_turn) in zip(
                     path, path[1:]):
                 if next_hub != end and current_hub != end:
-                    self.hub_reserve[
-                        next_hub, next_turn] = self.hub_reserve.get(
+                    self.planned_hub[
+                        next_hub, next_turn] = self.planned_hub.get(
                         (next_hub, next_turn), 0) + 1
 
                 link = tuple(sorted((current_hub, next_hub)))
                 for turn in range(current_turn, next_turn):
-                    self.link_reserve[
-                        (link, turn)] = self.link_reserve.get(
+                    self.planned_link[
+                        (link, turn)] = self.planned_link.get(
                             (link, turn), 0) + 1
 
     def simulation_turn(self) -> bool:
@@ -81,3 +81,13 @@ class Manager:
             print(f"\n[Turn {self.turn}]: " + " ".join(turn_moves))
             print(self.turn)
         return drones_active
+
+if __name__ == "__main__":
+        map_parsing = MapParser("maps/medium/03_priority_puzzle.txt")
+        map_parsing.get_main_settings()
+        map_fly = Map(map_parsing)
+
+        simulation = Manager(map_fly)
+        simulation.initiate_simulation()
+        while simulation.simulation_turn():
+            pass

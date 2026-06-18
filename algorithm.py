@@ -21,8 +21,8 @@ class PathFinder:
                           'restricted': 2}
 
     def djikstra(self, start: str, end: str, turn: int,
-                 reserve: dict[tuple[str, int], int],
-                 link_reserve: dict[tuple[
+                 planned_hub: dict[tuple[str, int], int],
+                 planned_link: dict[tuple[
                      tuple[str, str], int], int]) -> list[str]:
 
         visited = set()
@@ -53,8 +53,8 @@ class PathFinder:
                 move_priority = 0 if neighbor.zone_type == "priority" else 1
                 next_priority = priority + move_priority
                 hub_ok = (next_name in (start, end) or
-                          reserve.get((next_name, next_turn
-                                       ), 0) < neighbor.max_drones)
+                          planned_hub.get((next_name, next_turn
+                                           ), 0) < neighbor.max_drones)
 
                 link = tuple(sorted((hub_name, next_name)))
 
@@ -62,21 +62,30 @@ class PathFinder:
                 if self.map.connections[link_name]:
                     lk_cap = self.map.connections[link_name].max_link_capacity
 
-                link_approved = max([link_reserve.get((link, turn), 0)
+                link_approved = max([planned_link.get((link, turn), 0)
                                     for turn in range(
                                         curr_turn, next_turn)]) < lk_cap
 
                 if hub_ok and link_approved:
-                    heapq.heappush(waiting, (next_turn,
-                                             next_priority,
-                                             next_name,
-                                             path + [(next_name, next_turn)]))
+                    if move_priority == 0:
+                        heapq.heappush(waiting, (next_turn,
+                                                 next_priority,
+                                                 next_name,
+                                                 path + [(next_name,
+                                                          next_turn)]))
+                    else:
+                        heapq.heappush(waiting, (next_turn,
+                                                 next_priority,
+                                                 next_name,
+                                                 path + [(next_name,
+                                                          next_turn)]))
+
 
             if hub_name != end:
                 current_hub_stay = self.map.hubs[hub_name]
                 next_turn_stay = curr_turn + 1
-                available_stay = reserve.get((hub_name,
-                                              next_turn_stay), 0)
+                available_stay = planned_hub.get((hub_name,
+                                                  next_turn_stay), 0)
 
                 if (hub_name == start or
                         available_stay < current_hub_stay.max_drones):
