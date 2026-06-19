@@ -1,5 +1,5 @@
 from algorithm import PathFinder, Map
-from parser import MapParser
+
 
 class Manager:
     def __init__(self, map_fly: Map):
@@ -78,13 +78,3 @@ class Manager:
             print(f"\n[Turn {self.turn}]: " + " ".join(turn_moves))
             print(self.turn)
         return drones_active
-
-if __name__ == "__main__":
-        map_parsing = MapParser("maps/medium/03_priority_puzzle.txt")
-        map_parsing.get_main_settings()
-        map_fly = Map(map_parsing)
-
-        simulation = Manager(map_fly)
-        simulation.initiate_simulation()
-        while simulation.simulation_turn():
-            pass

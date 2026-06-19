@@ -182,6 +182,7 @@ class MapDisplay(arcade.Window):
             elif total_drones == goal_drones:
                 self.simturn_finished = True
 
+
 if __name__ == "__main__":
     try:
         maps = ["maps/easy/01_linear_path.txt",
