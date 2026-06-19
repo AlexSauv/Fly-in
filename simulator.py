@@ -11,6 +11,7 @@ class Manager:
         self.drones_path: dict[str, list[str]] = {}
         self.drone_step_index: dict[str, int] = {}
         self.all_drones = list(map_fly.drones)
+        self.turn_moves: list[str] = []
 
     def initiate_simulation(self) -> None:
         start = self.map_fly.start_hub.name
@@ -40,17 +41,19 @@ class Manager:
                             (link, turn), 0) + 1
 
     def simulation_turn(self) -> bool:
-        self.turn += 1
         turn_moves = []
-        drones_active = False
+        end_name = self.map_fly.end_hub.name
+        drones_active = any(drone not in self.map_fly.hubs[end_name].drones
+                            for drone in self.all_drones)
+        if not drones_active:
+            return False
 
+        self.turn += 1
         for drone in self.all_drones:
             path = self.drones_path[drone.id]
             step_index = self.drone_step_index.get(drone.id, 0)
             if step_index >= len(path) - 1:
                 continue
-
-            drones_active = True
 
             curr_hub_name, _ = path[step_index]
             next_hub_name, next_turn = path[step_index + 1]

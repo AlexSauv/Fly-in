@@ -18,19 +18,19 @@ class ZoneType(Enum):
 
 class Color(Enum):
     CYAN = "cyan"
-    BLUE = "blue"
-    GREEN = "green"
-    RED = "red"
-    YELLOW = 'yellow'
+    BLUE = "#1624a6"
+    GREEN = "#17ad10"
+    RED = "#c72712"
+    YELLOW = '#d6c11e'
     PINK = 'pink'
     BLACK = 'black'
-    ORANGE = 'orange'
+    ORANGE = '#db882a'
     PURPLE = 'purple'
     BROWN = 'brown'
-    MAROON = 'maroon'
-    GOLD = 'gold'
+    MAROON = '#633c0f'
+    GOLD = '#ab8f03'
     DARKRED = '#8B0000'
-    VIOLET = 'violet'
+    VIOLET = '#ae3ede'
     CRIMSON = 'crimson'
     RAINBOW = 'rainbow'
 
