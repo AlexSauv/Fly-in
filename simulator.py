@@ -7,12 +7,10 @@ class Manager:
         self.pathfinder = PathFinder(map_fly)
         self.turn: int = 0
         self.planned_hub: dict[tuple[str, int], int] = {}
-        self.planned_link:  dict[tuple[str, int], int] = {}
+        self.planned_link:  dict[tuple[tuple[str, str], int], int] = {}
         self.drones_path: dict[str, list[str]] = {}
         self.drone_step_index: dict[str, int] = {}
-        self.cost = {"normal": 1,
-                     "priority": 1,
-                     'restricted': 2}
+        self.all_drones = list(map_fly.drones)
 
     def initiate_simulation(self) -> None:
         start = self.map_fly.start_hub.name
@@ -44,9 +42,9 @@ class Manager:
     def simulation_turn(self) -> bool:
         self.turn += 1
         turn_moves = []
-
         drones_active = False
-        for drone in self.map_fly.drones:
+
+        for drone in self.all_drones:
             path = self.drones_path[drone.id]
             step_index = self.drone_step_index.get(drone.id, 0)
             if step_index >= len(path) - 1:
@@ -58,23 +56,19 @@ class Manager:
             next_hub_name, next_turn = path[step_index + 1]
 
             if self.turn < next_turn:
-                # lk_tuple = tuple(sorted((curr_hub_name, next_hub_name)))
-                # link_name = "-".join(lk_tuple)
-                # turn_moves.append(f"{drone.id}-{link_name}")
                 continue
 
             if self.turn == next_turn:
-
                 current_hub = self.map_fly.hubs[curr_hub_name]
                 next_hub = self.map_fly.hubs[next_hub_name]
 
-                if drone in current_hub:
-                    current_hub.drones.remove(drone)
-                if drone not in next_hub:
-                    next_hub.drones.append(drone)
-
-                drone.moving_to(next_hub.position)
-                turn_moves.append(f"{drone.id}-{next_hub_name}")
+                if curr_hub_name != next_hub_name:
+                    if drone in current_hub.drones:
+                        current_hub.drones.remove(drone)
+                    if drone not in next_hub.drones:
+                        next_hub.drones.append(drone)
+                    drone.moving_to(next_hub.position)
+                    turn_moves.append(f"{drone.id}-{next_hub_name}")
                 self.drone_step_index[drone.id] += 1
 
         if turn_moves:

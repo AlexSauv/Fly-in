@@ -23,7 +23,7 @@ class MapDisplay(arcade.Window):
         for hub in hubs.values():
             if hub.drones:
                 for drone_data in hub.drones:
-                    drone_sprite = arcade.Sprite(self.drone_txt, scale=0.01)
+                    drone_sprite = arcade.Sprite(self.drone_txt, scale=0.015)
                     drone_sprite.center_x = hub.position[0] * 150 + center_x
                     drone_sprite.center_y = hub.position[1] * 150 + center_y
                     drone_sprite.target_x = drone_sprite.center_x
@@ -33,7 +33,7 @@ class MapDisplay(arcade.Window):
                     self.drone_sprites.append(drone_sprite)
 
     def get_center(self) -> tuple[int, int]:
-        hubs = map_fly.hubs
+        hubs = self.map_fly.hubs
 
         min_x = min([hubs[hub].position[0] for hub in hubs])
         min_y = min([hubs[hub].position[1] for hub in hubs])
@@ -50,7 +50,7 @@ class MapDisplay(arcade.Window):
 
     def on_draw(self):
         self.clear()
-        hubs = map_fly.hubs
+        hubs = self.map_fly.hubs
         connections = map_fly.connections
 
         center_x, center_y = self.get_center()
@@ -88,11 +88,30 @@ class MapDisplay(arcade.Window):
         arcade.draw_text(output, 10, 20, arcade.color.WHITE, 14)
 
     def on_update(self, time):
-        drone_arrived = True
+        drones_arrived = True
+        center_x, center_y = self.get_center()
         for drone in self.drone_sprites:
             dis_x = drone.target_x - drone.center_x
             dis_y = drone.target_y - drone.center_y
-            dis = math.sqrt(dis_x**2 + dis_y**2)
+            if abs(dis_x) > 1 or abs(dis_y) > 1:
+                drones_arrived = False
+                drone.center_x += dis_x * 0.1
+                drone.center_y += dis_y * 0.1
+            else:
+                drone.center_x = drone.target_x
+                drone.center_y = drone.target_y
+        
+        if drones_arrived:
+            simulation_still = self.simulation.simulation_turn()
+            if simulation_still:
+                hubs = self.map_fly.hubs
+                for drone in self.drone_sprites:
+                    for hub in hubs.values():
+                        if drone.simdrone in hub.drones:
+                            drone.target_x = hub.position[0] * 150 + center_x
+                            drone.target_y = hub.position[1] * 150 + center_y
+                            break
+                    
             
 
             

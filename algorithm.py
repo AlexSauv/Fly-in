@@ -59,26 +59,19 @@ class PathFinder:
                 link = tuple(sorted((hub_name, next_name)))
 
                 link_name = "-".join(link)
+                lk_cap = 1
                 if self.map.connections[link_name]:
                     lk_cap = self.map.connections[link_name].max_link_capacity
 
-                link_approved = max([planned_link.get((link, turn), 0)
-                                    for turn in range(
-                                        curr_turn, next_turn)]) < lk_cap
+                link_approved = all(planned_link.get((link, t), 0) < lk_cap 
+                                    for t in range(curr_turn, next_turn))
 
                 if hub_ok and link_approved:
-                    if move_priority == 0:
-                        heapq.heappush(waiting, (next_turn,
-                                                 next_priority,
-                                                 next_name,
-                                                 path + [(next_name,
-                                                          next_turn)]))
-                    else:
-                        heapq.heappush(waiting, (next_turn,
-                                                 next_priority,
-                                                 next_name,
-                                                 path + [(next_name,
-                                                          next_turn)]))
+                    heapq.heappush(waiting, (next_turn,
+                                             next_priority,
+                                             next_name,
+                                             path + [(next_name,
+                                                      next_turn)]))
 
 
             if hub_name != end:
@@ -89,7 +82,8 @@ class PathFinder:
 
                 if (hub_name == start or
                         available_stay < current_hub_stay.max_drones):
-                    heapq.heappush(waiting, (next_turn_stay,
+                    heapq.heappush(waiting, (
+                                             next_turn_stay,
                                              priority + 1,
                                              hub_name,
                                              path + [(hub_name,
