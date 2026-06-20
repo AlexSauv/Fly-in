@@ -1,5 +1,6 @@
 from algorithm import PathFinder, Map
 
+
 class Manager:
     def __init__(self, map_fly: Map):
         self.map_fly = map_fly
@@ -71,7 +72,8 @@ class Manager:
                     current_hub.drones.remove(drone)
                 if drone not in connect:
                     connect.drones.append(drone)
-                turn_moves.append(f"{drone.id}-{curr_hub_name}-{next_hub_name}")
+                turn_moves.append(f"{drone.id}-"
+                                  f"{curr_hub_name}-{next_hub_name}")
                 continue
 
             if self.turn == next_turn:
