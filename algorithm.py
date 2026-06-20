@@ -31,7 +31,7 @@ class PathFinder:
         ]
 
         while waiting:
-
+            restricted = False
             curr_turn, priority, hub_name, path = heapq.heappop(waiting)
             if hub_name == end:
                 return path
@@ -72,7 +72,6 @@ class PathFinder:
                                              next_name,
                                              path + [(next_name,
                                                       next_turn)]))
-
 
             if hub_name != end:
                 current_hub_stay = self.map.hubs[hub_name]

@@ -1,5 +1,5 @@
 from algorithm import PathFinder, Map
-
+from utils import Drone
 
 class Manager:
     def __init__(self, map_fly: Map):
@@ -12,6 +12,7 @@ class Manager:
         self.drone_step_index: dict[str, int] = {}
         self.all_drones = list(map_fly.drones)
         self.turn_moves: list[str] = []
+        self.in_transit: dict[str, tuple[str, str]] = {}
 
     def initiate_simulation(self) -> None:
         start = self.map_fly.start_hub.name
@@ -59,11 +60,20 @@ class Manager:
             next_hub_name, next_turn = path[step_index + 1]
 
             if self.turn < next_turn:
+                current_hub = self.map_fly.hubs[curr_hub_name]
+                next_hub = self.map_fly.hubs[next_hub_name]
+                if next_hub.zone_type == 'restricted':
+                    if drone in current_hub.drones:
+                        current_hub.drones.remove(drone)
+                    self.in_transit[drone.id] = (curr_hub_name, next_hub_name)
                 continue
 
             if self.turn == next_turn:
                 current_hub = self.map_fly.hubs[curr_hub_name]
                 next_hub = self.map_fly.hubs[next_hub_name]
+
+                if drone.id in self.in_transit:
+                    del self.in_transit[drone.id]
 
                 if curr_hub_name != next_hub_name:
                     if drone in current_hub.drones:

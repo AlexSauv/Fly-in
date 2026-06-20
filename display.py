@@ -12,7 +12,7 @@ class MapDisplay(arcade.Window):
         self.maps = maps
         self.maps_index = 0
 
-        arcade.set_background_color(arcade.color.DARK_BLUE)
+        self.background = arcade.load_texture("background_img.jpg")
         self.drone_txt = arcade.load_texture("drone_img.png")
         self.drone_sprites = arcade.SpriteList()
         self.camera = arcade.Camera2D()
@@ -47,11 +47,10 @@ class MapDisplay(arcade.Window):
             arcade.exit()
 
     def update_camera(self):
-        center_x, center_y = self.get_center()
-        self.camera.position = (center_x + 200, center_y)
+        self.camera.position = (self.width // 2, self.height // 2)
         self.camera.zoom = 1.0 / self.zoom_level
 
-    def on_mouse_scroll(self, x, y, sroll_x, scroll_y):
+    def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
         if scroll_y > 0:
             self.zoom_level -= 0.5
         else:
@@ -95,6 +94,10 @@ class MapDisplay(arcade.Window):
     def on_draw(self):
         self.clear()
         self.camera.use()
+        arcade.draw_texture_rect(
+            self.background,
+            arcade.LBWH(0, 0, self.width, self.height),
+        )
         hubs = self.curr_map.hubs
         connections = self.curr_map.connections
 
@@ -172,11 +175,22 @@ class MapDisplay(arcade.Window):
             if self.simturn:
                 hubs = self.curr_map.hubs
                 for drone in self.drone_sprites:
+                    in_hub = False
                     for hub in hubs.values():
                         if drone.simu_drone in hub.drones:
+                            in_hub = True
                             drone.target_x = hub.position[0] * 150 + center_x
                             drone.target_y = hub.position[1] * 150 + center_y
                             break
+                    if not in_hub and drone.simu_drone.id in self.simulation.in_transit:
+                        curr_name_hub, end_name_hub = self.simulation.in_transit[drone.simu_drone.id]
+                        hub_start = hubs[curr_name_hub]
+                        hub_end = hubs[end_name_hub]
+                        mid_x = (hub_start.position[0] + hub_end.position[0]) / 2
+                        mid_y = (hub_start.position[1] + hub_end.position[1]) / 2
+                        drone.target_x = mid_x * 150 + center_x
+                        drone.target_y = mid_y * 150 + center_y
+                        break
                 self.simturn = None
                 self.drone_move = True
             elif total_drones == goal_drones:
