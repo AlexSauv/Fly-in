@@ -1,3 +1,5 @@
+import sys
+import subprocess
 import arcade
 from algorithm import Map
 from parser import MapParser
@@ -24,8 +26,8 @@ class MapDisplay(arcade.Window):
         map_parsing.get_main_settings()
         self.curr_map = Map(map_parsing)
 
-        self.simulation = Manager(self.curr_map)
-        self.simulation.initiate_simulation()
+        self.simu = Manager(self.curr_map)
+        self.simu.initiate_simulation()
         self.zoom_level = 1.0
         self.simturn = None
         self.simturn_finished = False
@@ -38,7 +40,7 @@ class MapDisplay(arcade.Window):
         if key == arcade.key.SPACE:
             if self.drone_move:
                 return
-            self.simturn = self.simulation.simulation_turn()
+            self.simturn = self.simu.simulation_turn()
             self.drone_move = True
         if key == arcade.key.N:
             self.maps_index = (self.maps_index + 1) % len(self.maps)
@@ -66,14 +68,17 @@ class MapDisplay(arcade.Window):
         for hub in hubs.values():
             if hub.drones:
                 for drone_data in hub.drones:
-                    drone_sprite = arcade.Sprite(self.drone_txt, scale=0.09)
-                    drone_sprite.center_x = hub.position[0] * 150 + center_x
-                    drone_sprite.center_y = hub.position[1] * 150 + center_y
-                    drone_sprite.target_x = drone_sprite.center_x
-                    drone_sprite.target_y = drone_sprite.center_y
-                    drone_sprite.simu_drone = drone_data
+                    drone_sprt = arcade.SpriteCircle(12,
+                                                     arcade.color.WHITE_SMOKE)
+                    drone_sprt = arcade.Sprite(self.drone_txt, scale=0.09)
+                    drone_sprt.color = arcade.color.WHITE_SMOKE
+                    drone_sprt.center_x = hub.position[0] * 150 + center_x
+                    drone_sprt.center_y = hub.position[1] * 150 + center_y
+                    drone_sprt.target_x = drone_sprt.center_x
+                    drone_sprt.target_y = drone_sprt.center_y
+                    drone_sprt.s_drone = drone_data
 
-                    self.drone_sprites.append(drone_sprite)
+                    self.drone_sprites.append(drone_sprt)
 
     def get_center(self) -> tuple[int, int]:
         hubs = self.curr_map.hubs
@@ -106,11 +111,25 @@ class MapDisplay(arcade.Window):
             hub_start = connections[connection].hubs[0]
             hub_end = connections[connection].hubs[1]
 
+
             start_x = hub_start.position[0] * 150 + center_x
             start_y = hub_start.position[1] * 150 + center_y
 
             end_x = hub_end.position[0] * 150 + center_x
             end_y = hub_end.position[1] * 150 + center_y
+
+            mid_x = (start_x + end_x) / 2
+            mid_y = (start_y + end_y) / 2
+
+            drones_co = sum(len(hub.drones) for hub
+                            in connections[connection].hubs)
+            total_drones = (f"{drones_co}/"
+                            f"{connections[connection].max_link_capacity}")
+            arcade.draw_text(total_drones,
+                             mid_x - 5,
+                             mid_y + 20,
+                             arcade.color.WHITE,
+                             12)
             arcade.draw_line(start_x, start_y, end_x, end_y,
                              arcade.color.WHITE, 3)
         for hub in hubs:
@@ -143,11 +162,34 @@ class MapDisplay(arcade.Window):
                              anchor_x='center',
                              anchor_y='center')
         self.drone_sprites.draw()
+        for drone_num in self.drone_sprites:
+            num = drone_num.s_drone.id
+
+            n_drone_x = drone_num.center_x
+            n_drone_y = drone_num.center_y
+
+            arcade.draw_circle_filled(
+                n_drone_x,
+                n_drone_y,
+                8,
+                arcade.color.WHITE
+            )
+            arcade.draw_text(
+                num,
+                n_drone_x,
+                n_drone_y,
+                arcade.color.BLACK,
+                font_size=6,
+                bold=True,
+                anchor_x='center',
+                anchor_y='center'
+            )
+
         if self.simturn_finished:
             self.clear()
             arcade.camera.Camera2D().use()
             result = ("FINISHED ! All drones arrived"
-                      f" in {self.simulation.turn} turns")
+                      f" in {self.simu.turn} turns")
             arcade.draw_text(result, self.width // 2,
                              self.height // 2, arcade.color.WHITE,
                              24, anchor_x='center', anchor_y='center')
@@ -177,17 +219,22 @@ class MapDisplay(arcade.Window):
                 for drone in self.drone_sprites:
                     in_hub = False
                     for hub in hubs.values():
-                        if drone.simu_drone in hub.drones:
+                        if drone.s_drone in hub.drones:
                             in_hub = True
                             drone.target_x = hub.position[0] * 150 + center_x
                             drone.target_y = hub.position[1] * 150 + center_y
                             break
-                    if not in_hub and drone.simu_drone.id in self.simulation.in_transit:
-                        curr_name_hub, end_name_hub = self.simulation.in_transit[drone.simu_drone.id]
-                        hub_start = hubs[curr_name_hub]
-                        hub_end = hubs[end_name_hub]
-                        mid_x = (hub_start.position[0] + hub_end.position[0]) / 2
-                        mid_y = (hub_start.position[1] + hub_end.position[1]) / 2
+                    if not in_hub and drone.s_drone.id in self.simu.in_transit:
+                        curr_hub, end_hub = self.simu.in_transit[
+                            drone.s_drone.id]
+                        hub_start = hubs[curr_hub]
+                        hub_end = hubs[end_hub]
+
+                        mid_x = (hub_start.position[0] +
+                                 hub_end.position[0]) / 2
+                        mid_y = (hub_start.position[1] +
+                                 hub_end.position[1]) / 2
+
                         drone.target_x = mid_x * 150 + center_x
                         drone.target_y = mid_y * 150 + center_y
                         break
@@ -214,3 +261,7 @@ if __name__ == "__main__":
         arcade.run()
     except Exception as e:
         print(e)
+    except KeyboardInterrupt:
+        subprocess.run('clear', shell=True)
+        print("Fly in simulation closed.")
+        sys.exit(0)

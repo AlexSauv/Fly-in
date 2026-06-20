@@ -31,7 +31,6 @@ class PathFinder:
         ]
 
         while waiting:
-            restricted = False
             curr_turn, priority, hub_name, path = heapq.heappop(waiting)
             if hub_name == end:
                 return path
@@ -57,8 +56,8 @@ class PathFinder:
                                            ), 0) < neighbor.max_drones)
 
                 link = tuple(sorted((hub_name, next_name)))
-
                 link_name = "-".join(link)
+
                 lk_cap = 1
                 if self.map.connections[link_name]:
                     lk_cap = self.map.connections[link_name].max_link_capacity
