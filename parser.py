@@ -173,9 +173,11 @@ class MapParser:
         hub_a = self.hubs[name_one]
         hub_b = self.hubs[name_two]
         max_capacity = int(metadata.get("max_link_capacity", 1))
+        drones_init: list[Drone] = []
         connect = Connection(hub_name_a=name_one,
                              hub_name_b=name_two,
                              hubs=[hub_a, hub_b],
+                             drones=drones_init,
                              max_link_capacity=max_capacity
                              )
         self.connections.setdefault(link_name, connect)

@@ -57,6 +57,7 @@ class Connection(BaseModel):
     hub_name_b: str = Field(min_length=1)
     hubs: list[Hub] = Field(max_length=2)
     max_link_capacity: int = Field(ge=1, default=1)
+    drones: list[Drone] = Field(default=list)
 
     @model_validator(mode="after")
     def check_name(self) -> Self:

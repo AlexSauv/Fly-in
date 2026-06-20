@@ -111,7 +111,6 @@ class MapDisplay(arcade.Window):
             hub_start = connections[connection].hubs[0]
             hub_end = connections[connection].hubs[1]
 
-
             start_x = hub_start.position[0] * 150 + center_x
             start_y = hub_start.position[1] * 150 + center_y
 
@@ -121,8 +120,7 @@ class MapDisplay(arcade.Window):
             mid_x = (start_x + end_x) / 2
             mid_y = (start_y + end_y) / 2
 
-            drones_co = sum(len(hub.drones) for hub
-                            in connections[connection].hubs)
+            drones_co = len(connections[connection].drones)
             total_drones = (f"{drones_co}/"
                             f"{connections[connection].max_link_capacity}")
             arcade.draw_text(total_drones,
@@ -224,20 +222,21 @@ class MapDisplay(arcade.Window):
                             drone.target_x = hub.position[0] * 150 + center_x
                             drone.target_y = hub.position[1] * 150 + center_y
                             break
-                    if not in_hub and drone.s_drone.id in self.simu.in_transit:
-                        curr_hub, end_hub = self.simu.in_transit[
-                            drone.s_drone.id]
-                        hub_start = hubs[curr_hub]
-                        hub_end = hubs[end_hub]
+                    if not in_hub:
+                        connections = self.curr_map.connections
+                        for connect in connections.values():
+                            if drone.s_drone in connect.drones:
+                                hub_start = connect.hubs[0]
+                                hub_end = connect.hubs[1]
 
-                        mid_x = (hub_start.position[0] +
-                                 hub_end.position[0]) / 2
-                        mid_y = (hub_start.position[1] +
-                                 hub_end.position[1]) / 2
+                                mid_x = (hub_start.position[0] +
+                                         hub_end.position[0]) / 2
+                                mid_y = (hub_start.position[1] +
+                                         hub_end.position[1]) / 2
 
-                        drone.target_x = mid_x * 150 + center_x
-                        drone.target_y = mid_y * 150 + center_y
-                        break
+                                drone.target_x = mid_x * 150 + center_x
+                                drone.target_y = mid_y * 150 + center_y
+                                break
                 self.simturn = None
                 self.drone_move = True
             elif total_drones == goal_drones:
