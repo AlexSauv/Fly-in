@@ -32,19 +32,25 @@ class MapDisplay(arcade.Window):
         self.simturn = None
         self.simturn_finished = False
         self.drone_move = False
+        self.auto = False
 
         self.set_drone()
         self.update_camera()
 
     def on_key_press(self, key, modifiers):
-        if key == arcade.key.SPACE:
-            if self.drone_move:
+        if key == arcade.key.RIGHT:
+            if self.drone_move or self.auto:
                 return
             self.simturn = self.simu.simulation_turn()
             self.drone_move = True
         if key == arcade.key.N:
             self.maps_index = (self.maps_index + 1) % len(self.maps)
             self.load_map_simulation()
+        if key == arcade.key.P:
+            self.maps_index = (self.maps_index - 1) % len(self.maps)
+            self.load_map_simulation()
+        if key == arcade.key.A:
+            self.auto = not self.auto
         if key == arcade.key.ESCAPE:
             arcade.exit()
 
@@ -95,14 +101,38 @@ class MapDisplay(arcade.Window):
         offset_y = (self.height / 2) - (center_y * 150)
 
         return offset_x, offset_y
+    
+    def sum_keyboard(self):
+        arcade.Text("PRESS YOUR KEYS:",
+                    30,
+                    110,
+                    arcade.color.WHITE,
+                    12).draw()
+        arcade.Text("P / N -> Previous Map / Next Map",
+                    30,
+                    80,
+                    arcade.color.WHITE,
+                    12).draw()
+        arcade.Text("A -> Auto mode",
+                    30,
+                    60,
+                    arcade.color.WHITE,
+                    12).draw()
+        arcade.Text("Right -> Next turn (on auto disabled)",
+                    30,
+                    40,
+                    arcade.color.WHITE,
+                    12).draw()
 
     def on_draw(self):
         self.clear()
         self.camera.use()
         arcade.draw_texture_rect(
             self.background,
-            arcade.LBWH(0, 0, self.width, self.height),
-        )
+            arcade.LBWH(0, 0,
+                        self.width,
+                        self.height))
+        self.sum_keyboard()
         hubs = self.curr_map.hubs
         connections = self.curr_map.connections
 
@@ -123,11 +153,11 @@ class MapDisplay(arcade.Window):
             drones_co = len(connections[connection].drones)
             total_drones = (f"{drones_co}/"
                             f"{connections[connection].max_link_capacity}")
-            arcade.draw_text(total_drones,
-                             mid_x - 5,
-                             mid_y + 20,
-                             arcade.color.WHITE,
-                             12)
+            arcade.Text(total_drones,
+                        mid_x - 5,
+                        mid_y + 20,
+                        arcade.color.WHITE,
+                        12).draw()
             arcade.draw_line(start_x, start_y, end_x, end_y,
                              arcade.color.WHITE, 3)
         for hub in hubs:
@@ -145,52 +175,50 @@ class MapDisplay(arcade.Window):
                 arcade.draw_circle_filled(x, y, 35, color_rgb)
             else:
                 raise ValueError(f"[DISPLAY] {color} color not found")
-            arcade.draw_text(hubs[hub].name,
-                             x,
-                             y - 50,
-                             arcade.color.WHITE,
-                             font_size=10,
-                             anchor_x='center')
+            arcade.Text(hubs[hub].name,
+                        x,
+                        y - 50,
+                        arcade.color.WHITE,
+                        font_size=10,
+                        anchor_x='center').draw()
             filled = f"{len(hubs[hub].drones)}/{hubs[hub].max_drones}"
-            arcade.draw_text(filled,
-                             x,
-                             y,
-                             arcade.color.WHITE,
-                             12,
-                             anchor_x='center',
-                             anchor_y='center')
+            arcade.Text(filled,
+                        x,
+                        y,
+                        arcade.color.WHITE,
+                        12,
+                        anchor_x='center',
+                        anchor_y='center').draw()
+
         self.drone_sprites.draw()
         for drone_num in self.drone_sprites:
-            num = drone_num.s_drone.id
+            num = drone_num.s_drone
 
             n_drone_x = drone_num.center_x
             n_drone_y = drone_num.center_y
 
-            arcade.draw_circle_filled(
-                n_drone_x,
-                n_drone_y,
-                8,
-                arcade.color.WHITE
-            )
-            arcade.draw_text(
+            arcade.Text(
                 num,
                 n_drone_x,
-                n_drone_y,
-                arcade.color.BLACK,
+                n_drone_y + 3,
+                arcade.color.WHITE,
                 font_size=6,
                 bold=True,
                 anchor_x='center',
-                anchor_y='center'
-            )
+                anchor_y='center').draw()
 
         if self.simturn_finished:
             self.clear()
             arcade.camera.Camera2D().use()
             result = ("FINISHED ! All drones arrived"
                       f" in {self.simu.turn} turns")
-            arcade.draw_text(result, self.width // 2,
-                             self.height // 2, arcade.color.WHITE,
-                             24, anchor_x='center', anchor_y='center')
+            arcade.Text(result,
+                        self.width // 2,
+                        self.height // 2,
+                        arcade.color.WHITE,
+                        24,
+                        anchor_x='center',
+                        anchor_y='center').draw()
             return
 
     def on_update(self, delta_time):
@@ -198,20 +226,25 @@ class MapDisplay(arcade.Window):
         total_drones = len(self.drone_sprites)
         goal_drones = len(self.curr_map.end_hub.drones)
         center_x, center_y = self.get_center()
+
         for drone in self.drone_sprites:
             dis_x = drone.target_x - drone.center_x
             dis_y = drone.target_y - drone.center_y
 
             if abs(dis_x) > 1 or abs(dis_y) > 1:
                 drones_arrived = False
-                drone.center_x += dis_x * 0.1
-                drone.center_y += dis_y * 0.1
+                drone.center_x += dis_x * 0.3
+                drone.center_y += dis_y * 0.3
             else:
                 drone.center_x = drone.target_x
                 drone.center_y = drone.target_y
 
         if drones_arrived:
             self.drone_move = False
+            if self.auto and not self.simturn_finished:
+                self.simturn = self.simu.simulation_turn()
+                self.drone_move = True
+
             if self.simturn:
                 hubs = self.curr_map.hubs
                 for drone in self.drone_sprites:
@@ -256,7 +289,7 @@ if __name__ == "__main__":
                 "maps/hard/03_ultimate_challenge.txt",
                 "maps/challenger/01_the_impossible_dream.txt"
                 ]
-        renderer = MapDisplay(1920, 1080, "Fly-in", maps)
+        renderer = MapDisplay(2400, 1200, "Fly-in", maps)
         arcade.run()
     except Exception as e:
         print(e)

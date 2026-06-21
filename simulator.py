@@ -22,10 +22,10 @@ class Manager:
                 start, end, 0, self.planned_hub,
                 self.planned_link)
             if not path:
-                raise ValueError(f"[MANAGER] Path not found for {drone.id}.")
+                raise ValueError(f"[MANAGER] Path not found for {drone}.")
 
-            self.drones_path[drone.id] = path
-            self.drone_step_index[drone.id] = 0
+            self.drones_path[drone] = path
+            self.drone_step_index[drone] = 0
 
             for (current_hub, current_turn), (next_hub, next_turn) in zip(
                     path, path[1:]):
@@ -50,8 +50,8 @@ class Manager:
 
         self.turn += 1
         for drone in self.all_drones:
-            path = self.drones_path[drone.id]
-            step_index = self.drone_step_index.get(drone.id, 0)
+            path = self.drones_path[drone]
+            step_index = self.drone_step_index.get(drone, 0)
             if step_index >= len(path) - 1:
                 continue
 
@@ -60,7 +60,7 @@ class Manager:
 
             if curr_hub_name == next_hub_name:
                 if self.turn == next_turn:
-                    self.drone_step_index[drone.id] += 1
+                    self.drone_step_index[drone] += 1
                 continue
 
             link_name = "-".join(sorted((curr_hub_name, next_hub_name)))
@@ -72,7 +72,7 @@ class Manager:
                     current_hub.drones.remove(drone)
                 if drone not in connect:
                     connect.drones.append(drone)
-                turn_moves.append(f"{drone.id}-"
+                turn_moves.append(f"{drone}-"
                                   f"{curr_hub_name}-{next_hub_name}")
                 continue
 
@@ -88,9 +88,8 @@ class Manager:
                         current_hub.drones.remove(drone)
                     if drone not in next_hub.drones:
                         next_hub.drones.append(drone)
-                    drone.moving_to(next_hub.position)
-                    turn_moves.append(f"{drone.id}-{next_hub_name}")
-                self.drone_step_index[drone.id] += 1
+                    turn_moves.append(f"{drone}-{next_hub_name}")
+                self.drone_step_index[drone] += 1
 
         if turn_moves:
             print(f"\n[Turn {self.turn}]: " + " ".join(turn_moves))

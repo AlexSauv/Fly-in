@@ -1,4 +1,4 @@
-from utils import Hub, Connection, ZoneType, Color, Drone
+from utils import Hub, Connection, ZoneType, Color
 import re
 import sys
 
@@ -124,7 +124,7 @@ class MapParser:
             max_drones_hub = self.nb_drones
         elif prefix == "end_hub":
             max_drones_hub = self.nb_drones
-        drones_init: list[Drone] = []
+        drones_init: list[str] = []
 
         hub = Hub(
             name=name_hub,
@@ -136,9 +136,7 @@ class MapParser:
         )
 
         if prefix == "start_hub":
-            hub.drones = [
-                Drone(id=f"D{i}",
-                      current_hub=pos) for i in range(
+            hub.drones = [f"D{i}" for i in range(
                           1, self.nb_drones + 1)]
 
         if prefix == "start_hub" and not self.start_hub:
@@ -173,7 +171,7 @@ class MapParser:
         hub_a = self.hubs[name_one]
         hub_b = self.hubs[name_two]
         max_capacity = int(metadata.get("max_link_capacity", 1))
-        drones_init: list[Drone] = []
+        drones_init: list[str] = []
         connect = Connection(hub_name_a=name_one,
                              hub_name_b=name_two,
                              hubs=[hub_a, hub_b],

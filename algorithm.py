@@ -62,7 +62,7 @@ class PathFinder:
                 if self.map.connections[link_name]:
                     lk_cap = self.map.connections[link_name].max_link_capacity
 
-                link_approved = all(planned_link.get((link, t), 0) < lk_cap 
+                link_approved = all(planned_link.get((link, t), 0) < lk_cap
                                     for t in range(curr_turn, next_turn))
 
                 if hub_ok and link_approved:

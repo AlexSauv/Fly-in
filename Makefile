@@ -1,4 +1,4 @@
-NAME= display.py
+NAME= MapRendering.py
 PY= python3
 MYPY= mypy
 FLAKE8= flake8

@@ -35,20 +35,12 @@ class Color(Enum):
     RAINBOW = 'rainbow'
 
 
-class Drone(BaseModel):
-    id: str
-    current_hub: tuple[int, int]
-
-    def moving_to(self, next_hub: tuple[int, int]) -> None:
-        self.current_hub = next_hub
-
-
 class Hub(BaseModel):
     name: str = Field(min_length=2, max_length=30)
     zone_type: str = Field(default=ZoneType.NORMAL.value)
     color: str = Field(default=Color.GREEN.value)
     position: tuple[int, int]
-    drones: list[Drone] = Field(default=list)
+    drones: list[str] = Field(default=list)
     max_drones: int = Field(default=1, ge=1)
 
 
@@ -57,7 +49,7 @@ class Connection(BaseModel):
     hub_name_b: str = Field(min_length=1)
     hubs: list[Hub] = Field(max_length=2)
     max_link_capacity: int = Field(ge=1, default=1)
-    drones: list[Drone] = Field(default=list)
+    drones: list[str] = Field(default=list)
 
     @model_validator(mode="after")
     def check_name(self) -> Self:
