@@ -1,8 +1,8 @@
 import sys
 import subprocess
 import arcade
-from algorithm import Map
-from parser import MapParser
+from algorithm import MapConfig
+from parser import FileParser
 from simulator import Manager
 
 
@@ -22,9 +22,9 @@ class MapDisplay(arcade.Window):
 
     def load_map_simulation(self):
         current_path = self.maps[self.maps_index]
-        map_parsing = MapParser(current_path)
-        map_parsing.get_main_settings()
-        self.curr_map = Map(map_parsing)
+        map_parsing = FileParser(current_path)
+        self.curr_map = MapConfig(map_parsing)
+        self.curr_map.generate_map()
 
         self.simu = Manager(self.curr_map)
         self.simu.initiate_simulation()
@@ -101,8 +101,14 @@ class MapDisplay(arcade.Window):
         offset_y = (self.height / 2) - (center_y * 150)
 
         return offset_x, offset_y
-    
-    def sum_keyboard(self):
+
+    def summary_text(self):
+        arcade.Text(self.curr_map.map_name,
+                    self.width // 2,
+                    self.height - 50,
+                    arcade.color.WHITE,
+                    20,
+                    anchor_x='center').draw()
         arcade.Text("PRESS YOUR KEYS:",
                     30,
                     110,
@@ -132,7 +138,7 @@ class MapDisplay(arcade.Window):
             arcade.LBWH(0, 0,
                         self.width,
                         self.height))
-        self.sum_keyboard()
+        self.summary_text()
         hubs = self.curr_map.hubs
         connections = self.curr_map.connections
 
@@ -192,7 +198,7 @@ class MapDisplay(arcade.Window):
 
         self.drone_sprites.draw()
         for drone_num in self.drone_sprites:
-            num = drone_num.s_drone
+            num = str(drone_num.s_drone)
 
             n_drone_x = drone_num.center_x
             n_drone_y = drone_num.center_y
@@ -233,8 +239,8 @@ class MapDisplay(arcade.Window):
 
             if abs(dis_x) > 1 or abs(dis_y) > 1:
                 drones_arrived = False
-                drone.center_x += dis_x * 0.3
-                drone.center_y += dis_y * 0.3
+                drone.center_x += dis_x * 0.4
+                drone.center_y += dis_y * 0.4
             else:
                 drone.center_x = drone.target_x
                 drone.center_y = drone.target_y
@@ -292,7 +298,7 @@ if __name__ == "__main__":
         renderer = MapDisplay(2400, 1200, "Fly-in", maps)
         arcade.run()
     except Exception as e:
-        print(e)
+        print(f"[ERROR] {e}")
     except KeyboardInterrupt:
         subprocess.run('clear', shell=True)
         print("Fly in simulation closed.")

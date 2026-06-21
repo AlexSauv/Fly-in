@@ -1,8 +1,9 @@
-from algorithm import PathFinder, Map
+from mapconfig import MapConfig
+from algorithm import PathFinder
 
 
 class Manager:
-    def __init__(self, map_fly: Map):
+    def __init__(self, map_fly: MapConfig):
         self.map_fly = map_fly
         self.pathfinder = PathFinder(map_fly)
         self.turn: int = 0
@@ -10,7 +11,7 @@ class Manager:
         self.planned_link:  dict[tuple[tuple[str, str], int], int] = {}
         self.drones_path: dict[str, list[str]] = {}
         self.drone_step_index: dict[str, int] = {}
-        self.all_drones = list(map_fly.drones)
+        self.all_drones = list(map_fly.start_hub.drones)
         self.turn_moves: list[str] = []
 
     def initiate_simulation(self) -> None:
@@ -72,7 +73,7 @@ class Manager:
                     current_hub.drones.remove(drone)
                 if drone not in connect:
                     connect.drones.append(drone)
-                turn_moves.append(f"{drone}-"
+                turn_moves.append(f"D{drone}-"
                                   f"{curr_hub_name}-{next_hub_name}")
                 continue
 
@@ -88,10 +89,9 @@ class Manager:
                         current_hub.drones.remove(drone)
                     if drone not in next_hub.drones:
                         next_hub.drones.append(drone)
-                    turn_moves.append(f"{drone}-{next_hub_name}")
+                    turn_moves.append(f"D{drone}-{next_hub_name}")
                 self.drone_step_index[drone] += 1
 
         if turn_moves:
             print(f"\n[Turn {self.turn}]: " + " ".join(turn_moves))
-            print(self.turn)
         return drones_active

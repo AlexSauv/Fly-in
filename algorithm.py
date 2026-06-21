@@ -1,21 +1,10 @@
-from parser import MapParser
+from mapconfig import MapConfig
 import heapq
 
 
-class Map:
-    def __init__(self, settings: MapParser):
-        self.start_hub = settings.start_hub
-        self.end_hub = settings.end_hub
-        self.drones = self.start_hub.drones
-        self.nb_drones = settings.nb_drones
-        self.hubs = settings.hubs
-        self.connections = settings.connections
-        self.connected_to = settings.connected_to
-
-
 class PathFinder:
-    def __init__(self, map: Map):
-        self.map = map
+    def __init__(self, map_config: MapConfig):
+        self.map_config = map_config
         self.cost_turn = {"normal": 1,
                           "priority": 1,
                           'restricted': 2}
@@ -40,9 +29,9 @@ class PathFinder:
                 continue
             visited.add(current_state)
 
-            next_hubs = self.map.connected_to.get(hub_name, [])
+            next_hubs = self.map_config.connected_to.get(hub_name, [])
             for next_name in next_hubs:
-                neighbor = self.map.hubs[next_name]
+                neighbor = self.map_config.hubs[next_name]
                 if neighbor.zone_type == "blocked":
                     continue
 
@@ -59,8 +48,9 @@ class PathFinder:
                 link_name = "-".join(link)
 
                 lk_cap = 1
-                if self.map.connections[link_name]:
-                    lk_cap = self.map.connections[link_name].max_link_capacity
+                if self.map_config.connections[link_name]:
+                    lk_cap = self.map_config.connections[
+                        link_name].max_link_capacity
 
                 link_approved = all(planned_link.get((link, t), 0) < lk_cap
                                     for t in range(curr_turn, next_turn))
@@ -73,7 +63,7 @@ class PathFinder:
                                                       next_turn)]))
 
             if hub_name != end:
-                current_hub_stay = self.map.hubs[hub_name]
+                current_hub_stay = self.map_config.hubs[hub_name]
                 next_turn_stay = curr_turn + 1
                 available_stay = planned_hub.get((hub_name,
                                                   next_turn_stay), 0)
