@@ -12,7 +12,7 @@ class PathFinder:
     def djikstra(self, start: str, end: str, turn: int,
                  planned_hub: dict[tuple[str, int], int],
                  planned_link: dict[tuple[
-                     tuple[str, str], int], int]) -> list[str]:
+                     tuple[str, str], int], int]) -> list[tuple[str, int]]:
 
         visited = set()
         waiting: list[tuple[int, int, str, list[tuple[str, int]]]] = [
@@ -44,7 +44,8 @@ class PathFinder:
                           planned_hub.get((next_name, next_turn
                                            ), 0) < neighbor.max_drones)
 
-                link = tuple(sorted((hub_name, next_name)))
+                hub_one, hub_two = sorted((hub_name, next_name))
+                link = (hub_one, hub_two)
                 link_name = "-".join(link)
 
                 lk_cap = 1

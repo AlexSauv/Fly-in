@@ -3,7 +3,7 @@ import sys
 try:
     import re
     from enum import Enum
-    from typing_extensions import Self
+    from typing_extensions import Self, Optional
     from pydantic import BaseModel, Field, model_validator
     from parser import FileParser
 except ImportError:
@@ -42,7 +42,7 @@ class Hub(BaseModel):
     zone_type: str = Field(default=ZoneType.NORMAL.value)
     color: str = Field(default=Color.GREEN.value)
     position: tuple[int, int]
-    drones: list[int] = Field(default=list)
+    drones: list[int] = Field(default_factory=list)
     max_drones: int = Field(default=1, ge=1)
 
 
@@ -51,7 +51,7 @@ class Connection(BaseModel):
     hub_name_b: str = Field(min_length=1)
     hubs: list[Hub] = Field(max_length=2)
     max_link_capacity: int = Field(ge=1, default=1)
-    drones: list[int] = Field(default=list)
+    drones: list[int] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def check_name(self) -> Self:
@@ -65,9 +65,9 @@ class MapConfig:
         self.settings = settings.fetch_infos()
         self.map_name = settings.name_file.split(
             "/")[-1].removesuffix(".txt")
-        self.start_hub: Hub = None
-        self.end_hub: Hub = None
         self.nb_drones = 0
+        self.start_hub: Optional[Hub] = None
+        self.end_hub: Optional[Hub] = None
         self.hubs: dict[str, Hub] = {}
         self.connections: dict[str, Connection] = {}
         self.connected_to: dict[str, list[str]] = {}

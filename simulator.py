@@ -4,23 +4,26 @@ from algorithm import PathFinder
 
 class Manager:
     def __init__(self, map_fly: MapConfig):
+        assert map_fly.start_hub is not None
+        assert map_fly.end_hub is not None
+
         self.map_fly = map_fly
+        self.end = map_fly.end_hub.name
+        self.start = map_fly.start_hub.name
         self.pathfinder = PathFinder(map_fly)
         self.turn: int = 0
         self.planned_hub: dict[tuple[str, int], int] = {}
         self.planned_link:  dict[tuple[tuple[str, str], int], int] = {}
-        self.drones_path: dict[str, list[str]] = {}
-        self.drone_step_index: dict[str, int] = {}
+        self.drones_path: dict[int, list[tuple[str, int]]] = {}
+        self.drone_step_index: dict[int, int] = {}
         self.all_drones = list(map_fly.start_hub.drones)
         self.turn_moves: list[str] = []
 
     def initiate_simulation(self) -> None:
-        start = self.map_fly.start_hub.name
-        end = self.map_fly.end_hub.name
 
-        for drone in list(self.map_fly.hubs[start].drones):
+        for drone in list(self.map_fly.hubs[self.start].drones):
             path = self.pathfinder.djikstra(
-                start, end, 0, self.planned_hub,
+                self.start, self.end, 0, self.planned_hub,
                 self.planned_link)
             if not path:
                 raise ValueError(f"[MANAGER] Path not found for {drone}.")
@@ -30,12 +33,13 @@ class Manager:
 
             for (current_hub, current_turn), (next_hub, next_turn) in zip(
                     path, path[1:]):
-                if next_hub != end and current_hub != end:
+                if next_hub != self.end and current_hub != self.end:
                     self.planned_hub[
                         next_hub, next_turn] = self.planned_hub.get(
                         (next_hub, next_turn), 0) + 1
 
-                link = tuple(sorted((current_hub, next_hub)))
+                hub_one, hub_two = sorted((current_hub, next_hub))
+                link = (hub_one, hub_two)
                 for turn in range(current_turn, next_turn):
                     self.planned_link[
                         (link, turn)] = self.planned_link.get(
@@ -43,8 +47,7 @@ class Manager:
 
     def simulation_turn(self) -> bool:
         turn_moves = []
-        end_name = self.map_fly.end_hub.name
-        drones_active = any(drone not in self.map_fly.hubs[end_name].drones
+        drones_active = any(drone not in self.map_fly.hubs[self.end].drones
                             for drone in self.all_drones)
         if not drones_active:
             return False
@@ -71,7 +74,7 @@ class Manager:
                 current_hub = self.map_fly.hubs[curr_hub_name]
                 if drone in current_hub.drones:
                     current_hub.drones.remove(drone)
-                if drone not in connect:
+                if drone not in connect.drones:
                     connect.drones.append(drone)
                 turn_moves.append(f"D{drone}-"
                                   f"{curr_hub_name}-{next_hub_name}")

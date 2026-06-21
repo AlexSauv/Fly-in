@@ -1,7 +1,7 @@
-NAME= MapRendering.py
+NAME= rendering.py
 PY= python3
-MYPY= mypy
-FLAKE8= flake8
+MYPY= ./venv/mypy
+FLAKE8= ./venv/flake8
 PYDANTIC = pydantic
 ARCADE = arcade
 

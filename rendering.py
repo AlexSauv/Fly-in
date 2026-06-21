@@ -7,20 +7,21 @@ from simulator import Manager
 
 
 class MapDisplay(arcade.Window):
-    def __init__(self, width, height, title, maps: list[str]):
+    def __init__(self, width: int, height: int,
+                 title: str, maps: list[str]):
         super().__init__(width, height, title)
         self.width = width
         self.height = height
         self.maps = maps
         self.maps_index = 0
 
-        self.background = arcade.load_texture("background_img.jpg")
-        self.drone_txt = arcade.load_texture("drone_img.png")
+        self.background = arcade.load_texture("sources/background_img.jpg")
+        self.drone_txt = arcade.load_texture("sources/drone_img.png")
         self.drone_sprites = arcade.SpriteList()
         self.camera = arcade.Camera2D()
         self.load_map_simulation()
 
-    def load_map_simulation(self):
+    def load_map_simulation(self) -> None:
         current_path = self.maps[self.maps_index]
         map_parsing = FileParser(current_path)
         self.curr_map = MapConfig(map_parsing)
@@ -28,8 +29,12 @@ class MapDisplay(arcade.Window):
 
         self.simu = Manager(self.curr_map)
         self.simu.initiate_simulation()
+        if self.curr_map.map_name == "01_the_impossible_dream":
+            self.mltp = 99
+        else:
+            self.mltp = 150
         self.zoom_level = 1.0
-        self.simturn = None
+        self.simturn: bool = False
         self.simturn_finished = False
         self.drone_move = False
         self.auto = False
@@ -37,12 +42,15 @@ class MapDisplay(arcade.Window):
         self.set_drone()
         self.update_camera()
 
-    def on_key_press(self, key, modifiers):
+    def on_key_press(self, key: int, _: int) -> None:
         if key == arcade.key.RIGHT:
             if self.drone_move or self.auto:
                 return
             self.simturn = self.simu.simulation_turn()
             self.drone_move = True
+            if self.simturn_finished:
+                self.maps_index = (self.maps_index + 1) % len(self.maps)
+                self.load_map_simulation()
         if key == arcade.key.N:
             self.maps_index = (self.maps_index + 1) % len(self.maps)
             self.load_map_simulation()
@@ -54,11 +62,12 @@ class MapDisplay(arcade.Window):
         if key == arcade.key.ESCAPE:
             arcade.exit()
 
-    def update_camera(self):
+    def update_camera(self) -> None:
         self.camera.position = (self.width // 2, self.height // 2)
         self.camera.zoom = 1.0 / self.zoom_level
 
-    def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
+    def on_mouse_scroll(self, _: int, y: int,
+                        scroll_x: int, scroll_y: int) -> None:
         if scroll_y > 0:
             self.zoom_level -= 0.5
         else:
@@ -78,15 +87,17 @@ class MapDisplay(arcade.Window):
                                                      arcade.color.WHITE_SMOKE)
                     drone_sprt = arcade.Sprite(self.drone_txt, scale=0.09)
                     drone_sprt.color = arcade.color.WHITE_SMOKE
-                    drone_sprt.center_x = hub.position[0] * 150 + center_x
-                    drone_sprt.center_y = hub.position[1] * 150 + center_y
+                    drone_sprt.center_x = (hub.position[0] *
+                                           self.mltp + center_x)
+                    drone_sprt.center_y = (hub.position[1] *
+                                           self.mltp + center_y)
                     drone_sprt.target_x = drone_sprt.center_x
                     drone_sprt.target_y = drone_sprt.center_y
                     drone_sprt.s_drone = drone_data
 
                     self.drone_sprites.append(drone_sprt)
 
-    def get_center(self) -> tuple[int, int]:
+    def get_center(self) -> tuple[float, float]:
         hubs = self.curr_map.hubs
 
         min_x = min([hubs[hub].position[0] for hub in hubs])
@@ -97,12 +108,12 @@ class MapDisplay(arcade.Window):
         center_x = (min_x + max_x) / 2
         center_y = (min_y + max_y) / 2
 
-        offset_x = (self.width / 2) - (center_x * 150)
-        offset_y = (self.height / 2) - (center_y * 150)
+        offset_x = (self.width / 2) - (center_x * self.mltp)
+        offset_y = (self.height / 2) - (center_y * self.mltp)
 
         return offset_x, offset_y
 
-    def summary_text(self):
+    def summary_text(self) -> None:
         arcade.Text(self.curr_map.map_name,
                     self.width // 2,
                     self.height - 50,
@@ -111,26 +122,36 @@ class MapDisplay(arcade.Window):
                     anchor_x='center').draw()
         arcade.Text("PRESS YOUR KEYS:",
                     30,
-                    110,
+                    150,
                     arcade.color.WHITE,
                     12).draw()
-        arcade.Text("P / N -> Previous Map / Next Map",
+        arcade.Text("[KEY] ESC        -> Quit the program",
+                    30,
+                    120,
+                    arcade.color.WHITE,
+                    12).draw()
+        arcade.Text("[KEY] P            -> Previous Map",
+                    30,
+                    100,
+                    arcade.color.WHITE,
+                    12).draw()
+        arcade.Text("[KEY] N           -> Next Map",
                     30,
                     80,
                     arcade.color.WHITE,
                     12).draw()
-        arcade.Text("A -> Auto mode",
+        arcade.Text("[KEY] A           -> Auto mode (on/off)",
                     30,
                     60,
                     arcade.color.WHITE,
                     12).draw()
-        arcade.Text("Right -> Next turn (on auto disabled)",
+        arcade.Text("[KEY] RIGHT   -> Next turn (with auto disabled)",
                     30,
                     40,
                     arcade.color.WHITE,
                     12).draw()
 
-    def on_draw(self):
+    def on_draw(self) -> None:
         self.clear()
         self.camera.use()
         arcade.draw_texture_rect(
@@ -147,11 +168,11 @@ class MapDisplay(arcade.Window):
             hub_start = connections[connection].hubs[0]
             hub_end = connections[connection].hubs[1]
 
-            start_x = hub_start.position[0] * 150 + center_x
-            start_y = hub_start.position[1] * 150 + center_y
+            start_x = hub_start.position[0] * self.mltp + center_x
+            start_y = hub_start.position[1] * self.mltp + center_y
 
-            end_x = hub_end.position[0] * 150 + center_x
-            end_y = hub_end.position[1] * 150 + center_y
+            end_x = hub_end.position[0] * self.mltp + center_x
+            end_y = hub_end.position[1] * self.mltp + center_y
 
             mid_x = (start_x + end_x) / 2
             mid_y = (start_y + end_y) / 2
@@ -167,8 +188,8 @@ class MapDisplay(arcade.Window):
             arcade.draw_line(start_x, start_y, end_x, end_y,
                              arcade.color.WHITE, 3)
         for hub in hubs:
-            x = hubs[hub].position[0] * 150 + center_x
-            y = hubs[hub].position[1] * 150 + center_y
+            x = hubs[hub].position[0] * self.mltp + center_x
+            y = hubs[hub].position[1] * self.mltp + center_y
             color = hubs[hub].color.upper()
             if color.startswith("#"):
                 hex_val = color.lstrip("#")
@@ -227,7 +248,9 @@ class MapDisplay(arcade.Window):
                         anchor_y='center').draw()
             return
 
-    def on_update(self, delta_time):
+    def on_update(self, _: int) -> None:
+        assert self.curr_map.end_hub is not None
+
         drones_arrived = True
         total_drones = len(self.drone_sprites)
         goal_drones = len(self.curr_map.end_hub.drones)
@@ -258,8 +281,10 @@ class MapDisplay(arcade.Window):
                     for hub in hubs.values():
                         if drone.s_drone in hub.drones:
                             in_hub = True
-                            drone.target_x = hub.position[0] * 150 + center_x
-                            drone.target_y = hub.position[1] * 150 + center_y
+                            drone.target_x = (hub.position[0] *
+                                              self.mltp + center_x)
+                            drone.target_y = (hub.position[1] *
+                                              self.mltp + center_y)
                             break
                     if not in_hub:
                         connections = self.curr_map.connections
@@ -273,10 +298,10 @@ class MapDisplay(arcade.Window):
                                 mid_y = (hub_start.position[1] +
                                          hub_end.position[1]) / 2
 
-                                drone.target_x = mid_x * 150 + center_x
-                                drone.target_y = mid_y * 150 + center_y
+                                drone.target_x = mid_x * self.mltp + center_x
+                                drone.target_y = mid_y * self.mltp + center_y
                                 break
-                self.simturn = None
+                self.simturn = False
                 self.drone_move = True
             elif total_drones == goal_drones:
                 self.simturn_finished = True
@@ -295,7 +320,7 @@ if __name__ == "__main__":
                 "maps/hard/03_ultimate_challenge.txt",
                 "maps/challenger/01_the_impossible_dream.txt"
                 ]
-        renderer = MapDisplay(2400, 1200, "Fly-in", maps)
+        renderer = MapDisplay(2500, 1400, "Fly-in", maps)
         arcade.run()
     except Exception as e:
         print(f"[ERROR] {e}")
