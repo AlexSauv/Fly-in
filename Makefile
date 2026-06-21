@@ -1,7 +1,7 @@
 NAME= rendering.py
 PY= python3
-MYPY= ./venv/mypy
-FLAKE8= ./venv/flake8
+MYPY= mypy
+FLAKE8= flake8
 PYDANTIC = pydantic
 ARCADE = arcade
 
@@ -21,9 +21,9 @@ clean:
 	rm -rf __pycache__ .mypy__cache
 
 lint:
-	@$(FLAKE8) .
-	@$(MYPY) . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	@./venv/bin/$(FLAKE8) . --exclude=venv
+	@./venv/bin/$(MYPY) . --exclude=venv --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict:
-	@$(FLAKE8) .
-	@$(MYPY) . --strict
+	@./venv/bin/$(FLAKE8) . --exclude=venv
+	@./venv/bin/$(MYPY) . --exclude=venv --strict
