@@ -38,7 +38,9 @@ class Color(Enum):
     LIME = '#00FF00'
     MAGENTA = '#FF00FF'
 
+
 class Hub(BaseModel):
+    """ Create a class for zone based on pydantic model """
     name: str = Field(min_length=2, max_length=30)
     zone_type: str = Field(default=ZoneType.NORMAL.value)
     color: str = Field(default=Color.GREEN.value)
@@ -48,6 +50,8 @@ class Hub(BaseModel):
 
 
 class Connection(BaseModel):
+    """ Create a class for connection
+    between zones based on pydantic model """
     hub_name_a: str = Field(min_length=1)
     hub_name_b: str = Field(min_length=1)
     hubs: list[Hub] = Field(max_length=2)
@@ -62,6 +66,8 @@ class Connection(BaseModel):
 
 
 class MapConfig:
+    """ Create Map OOP for handle each details of the map, regrouping hubs,
+      drones, connections and data for each of them """
     def __init__(self, settings: FileParser):
         self.settings = settings.fetch_infos()
         self.map_name = settings.name_file.split(
@@ -74,6 +80,14 @@ class MapConfig:
         self.connected_to: dict[str, list[str]] = {}
 
     def generate_map(self) -> None:
+        """ This function set all data combines for hubs,
+            connections, number of drones in the object.
+            it splits line by line each prefix, content
+            and metadata in order to create
+            hubs and connections given
+
+            return: Return nothing but set the right data in the object
+        """
         lines: list[str] = self.settings
         if not lines[0].startswith("nb_drones:"):
             raise ValueError(" [CONFIG] must begin"
@@ -112,6 +126,14 @@ class MapConfig:
             raise ValueError("[HUB] No end has been register")
 
     def metadata(self, config: str) -> tuple[str, dict[str, str]]:
+        """ This function is used for handling metadata fetch from file
+        for each hubs and connections
+
+        args: config is regrouping main content and metadata for each line
+
+        return: It returns a tuple with the main content split from metadata
+        and each metadata details for specificity
+        """
         meta_data: dict[str, str] = {}
         match = re.search(r'\[(.*?)\]', config)
 
@@ -136,6 +158,20 @@ class MapConfig:
                      row: str,
                      col: str,
                      metadata: dict[str, str]) -> None:
+        """
+        This function is used as hub factory,
+        it create each hubs mentionned in the file
+        read with all specificity given
+        It also set start and end hub
+
+        args: prefix is for each type connections, hubs (start and end)
+              name_hub is the name given of the hub
+              row is the position from the width
+              col is the position from the height
+              metadata is the meta given from function metadata
+
+        return: Return nothing just generate the hub
+        """
         if "-" in name_hub:
             raise ValueError("[HUB] Hub name must not contains '-'.")
         if name_hub in self.hubs:
@@ -190,6 +226,19 @@ class MapConfig:
     def generate_connection(self,
                             settings: str,
                             metadata: dict[str, str]) -> None:
+        """
+        This function is used as connection factory,
+        it create each connections mentionned in the file
+        read with all specificity given
+
+        args: settings are the main content of
+              each line were prefix is connection
+              it gives hubs related to each other
+              metadata is the meta given from function metadata and
+              contains specifity for the connection
+
+        return: Return nothing just generate the connection
+        """
         if "-" not in settings:
             raise ValueError("[CONNECTION] Names must be separate by '-'")
         names = settings.split("-")

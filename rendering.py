@@ -235,13 +235,12 @@ class MapDisplay(arcade.Window):
                 anchor_y='center').draw()
 
         if self.simturn_finished:
-            self.clear()
             arcade.camera.Camera2D().use()
-            result = ("FINISHED ! All drones arrived"
-                      f" in {self.simu.turn} turns")
+            result = ("FINISHED ! Total turns :"
+                      f" {self.simu.turn}")
             arcade.Text(result,
                         self.width // 2,
-                        self.height // 2,
+                        self.height - 200,
                         arcade.color.WHITE,
                         24,
                         anchor_x='center',
@@ -304,6 +303,7 @@ class MapDisplay(arcade.Window):
                 self.simturn = False
                 self.drone_move = True
             elif total_drones == goal_drones:
+                self.simu.generate_output_file()
                 self.simturn_finished = True
 
 

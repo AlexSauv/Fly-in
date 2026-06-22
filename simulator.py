@@ -3,6 +3,10 @@ from algorithm import PathFinder
 
 
 class Manager:
+    """
+        Create a class to handle simulation turns and
+        sets plannings path for each drones
+    """
     def __init__(self, map_fly: MapConfig):
         assert map_fly.start_hub is not None
         assert map_fly.end_hub is not None
@@ -20,9 +24,14 @@ class Manager:
         self.turn_moves: list[str] = []
 
     def initiate_simulation(self) -> None:
-
+        """
+            This function planned all drones turns
+            for each connections, hubs where the drones will fly in to
+            It permits handle variation of paths when the
+            capacities of zone and connections are full by other drones plan.
+        """
         for drone in list(self.map_fly.hubs[self.start].drones):
-            path = self.pathfinder.djikstra(
+            path = self.pathfinder.dijkstra_algo(
                 self.start, self.end, 0, self.planned_hub,
                 self.planned_link)
             if not path:
@@ -46,6 +55,15 @@ class Manager:
                             (link, turn), 0) + 1
 
     def simulation_turn(self) -> bool:
+        """
+            This function moves or standstill drones by
+            following plans for hubs and connection on
+            the current turn it also register all moves
+            done during the turn for the output file
+
+            return: Return a boolean to handle when all
+            are drones arrived in the hub end
+        """
         turn_moves = []
         drones_active = any(drone not in self.map_fly.hubs[self.end].drones
                             for drone in self.all_drones)
@@ -97,4 +115,15 @@ class Manager:
 
         if turn_moves:
             print(f"\n[Turn {self.turn}]: " + " ".join(turn_moves))
+            self.turn_moves.append(turn_moves)
         return drones_active
+
+    def generate_output_file(self):
+        """
+            create and write on a file all
+            moves done register for each turns
+        """
+        file = "output_file.txt"
+        with open(file, 'w') as f:
+            for turn in self.turn_moves:
+                f.write(f"{turn}\n")

@@ -9,11 +9,26 @@ class PathFinder:
                           "priority": 1,
                           'restricted': 2}
 
-    def djikstra(self, start: str, end: str, turn: int,
-                 planned_hub: dict[tuple[str, int], int],
-                 planned_link: dict[tuple[
-                     tuple[str, str], int], int]) -> list[tuple[str, int]]:
+    def dijkstra_algo(self, start: str, end: str, turn: int,
+                      planned_hub: dict[tuple[str, int], int],
+                      planned_link: dict[tuple[
+                          tuple[str, str], int],
+                          int]) -> list[tuple[str, int]]:
+        """
+        Finds the shortest time-dependent path between two hubs using Dijkstra
+        algorithm.
 
+        Args:
+            start: Name of the start hub.
+            end: Name of the dest hub.
+            turn: Starting turn/time-step.
+            planned_hub: Current drone occupancy per hub and turn.
+            planned_link: Current drone traffic per link and turn.
+
+        Returns:
+            A list of (hub_name, turn) tuples representing
+            the path, or [] if no path found.
+        """
         visited = set()
         waiting: list[tuple[int, int, str, list[tuple[str, int]]]] = [
             (turn, 0, start, [(start, turn)])
