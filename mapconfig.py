@@ -21,7 +21,7 @@ class ZoneType(Enum):
 class Color(Enum):
     CYAN = "cyan"
     BLUE = "#1624a6"
-    GREEN = "#17ad10"
+    GREEN = "#2fa029"
     RED = "#c72712"
     YELLOW = '#d6c11e'
     PINK = 'pink'
@@ -35,7 +35,8 @@ class Color(Enum):
     VIOLET = '#ae3ede'
     CRIMSON = 'crimson'
     RAINBOW = 'rainbow'
-
+    LIME = '#00FF00'
+    MAGENTA = '#FF00FF'
 
 class Hub(BaseModel):
     name: str = Field(min_length=2, max_length=30)
