@@ -21,7 +21,7 @@ class Manager:
         self.drones_path: dict[int, list[tuple[str, int]]] = {}
         self.drone_step_index: dict[int, int] = {}
         self.all_drones = list(map_fly.start_hub.drones)
-        self.turn_moves: list[str] = []
+        self.turn_moves: list[list[str]] = []
 
     def initiate_simulation(self) -> None:
         """
@@ -118,7 +118,7 @@ class Manager:
             self.turn_moves.append(turn_moves)
         return drones_active
 
-    def generate_output_file(self):
+    def generate_output_file(self) -> None:
         """
             create and write on a file all
             moves done register for each turns
