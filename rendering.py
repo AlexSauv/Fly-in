@@ -1,5 +1,3 @@
-import sys
-import subprocess
 import arcade
 from algorithm import MapConfig
 from parser import FileParser
@@ -7,6 +5,10 @@ from simulator import Manager
 
 
 class MapDisplay(arcade.Window):
+    """
+        Class for rendering output and programming
+        visualisation of drones steps through the map
+    """
     def __init__(self, width: int, height: int,
                  title: str, maps: list[str]):
         super().__init__(width, height, title)
@@ -15,13 +17,17 @@ class MapDisplay(arcade.Window):
         self.maps = maps
         self.maps_index = 0
 
-        self.background = arcade.load_texture("sources/background_img.jpg")
-        self.drone_txt = arcade.load_texture("sources/drone_img.png")
+        self.background = arcade.load_texture("src/background_img.jpg")
+        self.drone_txt = arcade.load_texture("src/drone_img.png")
         self.drone_sprites = arcade.SpriteList()
         self.camera = arcade.Camera2D()
         self.load_map_simulation()
 
     def load_map_simulation(self) -> None:
+        """
+            This function handle entrees map
+            files and load simulation data
+        """
         current_path = self.maps[self.maps_index]
         map_parsing = FileParser(current_path)
         self.curr_map = MapConfig(map_parsing)
@@ -43,6 +49,11 @@ class MapDisplay(arcade.Window):
         self.update_camera()
 
     def on_key_press(self, key: int, _: int) -> None:
+        """
+            Program even for key pressing: changing maps,
+            auto drones fly throught the map, execute turns,
+            exit programs
+        """
         if key == arcade.key.RIGHT:
             if self.drone_move or self.auto:
                 return
@@ -63,11 +74,13 @@ class MapDisplay(arcade.Window):
             arcade.exit()
 
     def update_camera(self) -> None:
+        """ this function is for zooming the map """
         self.camera.position = (self.width // 2, self.height // 2)
         self.camera.zoom = 1.0 / self.zoom_level
 
     def on_mouse_scroll(self, _: int, y: int,
                         scroll_x: int, scroll_y: int) -> None:
+        """ this function updates zoom on the map by scrolling"""
         if scroll_y > 0:
             self.zoom_level -= 0.5
         else:
@@ -77,6 +90,7 @@ class MapDisplay(arcade.Window):
         self.update_camera()
 
     def set_drone(self) -> None:
+        """ this function set drones visual representation"""
         center_x, center_y = self.get_center()
         self.drone_sprites.clear()
         hubs = self.curr_map.hubs
@@ -98,6 +112,10 @@ class MapDisplay(arcade.Window):
                     self.drone_sprites.append(drone_sprt)
 
     def get_center(self) -> tuple[float, float]:
+        """
+            this function is for calculate
+            center of the window for an element
+        """
         hubs = self.curr_map.hubs
 
         min_x = min([hubs[hub].position[0] for hub in hubs])
@@ -114,6 +132,10 @@ class MapDisplay(arcade.Window):
         return offset_x, offset_y
 
     def summary_text(self) -> None:
+        """
+            This function is used to draw
+            summary of key implementation event
+        """
         arcade.Text(self.curr_map.map_name,
                     self.width // 2,
                     self.height - 50,
@@ -152,6 +174,10 @@ class MapDisplay(arcade.Window):
                     12).draw()
 
     def on_draw(self) -> None:
+        """
+            This function is for main visualisation
+            of map: hubs, connection, capacity
+        """
         self.clear()
         self.camera.use()
         arcade.draw_texture_rect(
@@ -248,6 +274,9 @@ class MapDisplay(arcade.Window):
             return
 
     def on_update(self, _: int) -> None:
+        """
+            This function update each new event during simulation turns
+        """
         assert self.curr_map.end_hub is not None
 
         drones_arrived = True
@@ -306,25 +335,24 @@ class MapDisplay(arcade.Window):
                 self.simu.generate_output_file()
                 self.simturn_finished = True
 
-
-if __name__ == "__main__":
-    try:
-        maps = ["maps/easy/01_linear_path.txt",
-                "maps/easy/02_simple_fork.txt",
-                "maps/easy/03_basic_capacity.txt",
-                "maps/medium/01_dead_end_trap.txt",
-                "maps/medium/02_circular_loop.txt",
-                "maps/medium/03_priority_puzzle.txt",
-                "maps/hard/01_maze_nightmare.txt",
-                "maps/hard/02_capacity_hell.txt",
-                "maps/hard/03_ultimate_challenge.txt",
-                "maps/challenger/01_the_impossible_dream.txt"
-                ]
-        renderer = MapDisplay(2500, 1400, "Fly-in", maps)
-        arcade.run()
-    except Exception as e:
-        print(f"[ERROR] {e}")
-    except KeyboardInterrupt:
-        subprocess.run('clear', shell=True)
-        print("Fly in simulation closed.")
-        sys.exit(0)
+# if __name__ == "__main__":
+#     try:
+#         maps = ["maps/easy/01_linear_path.txt",
+#                 "maps/easy/02_simple_fork.txt",
+#                 "maps/easy/03_basic_capacity.txt",
+#                 "maps/medium/01_dead_end_trap.txt",
+#                 "maps/medium/02_circular_loop.txt",
+#                 "maps/medium/03_priority_puzzle.txt",
+#                 "maps/hard/01_maze_nightmare.txt",
+#                 "maps/hard/02_capacity_hell.txt",
+#                 "maps/hard/03_ultimate_challenge.txt",
+#                 "maps/challenger/01_the_impossible_dream.txt"
+#                 ]
+#         renderer = MapDisplay(2500, 1400, "Fly-in", maps)
+#         arcade.run()
+#     except Exception as e:
+#         print(f"[ERROR] {e}")
+#     except KeyboardInterrupt:
+#         subprocess.run('clear', shell=True)
+#         print("Fly in simulation closed.")
+#         sys.exit(1)
