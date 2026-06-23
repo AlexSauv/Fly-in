@@ -30,7 +30,6 @@ class PathFinder:
             the path, or [] if no path found.
         """
         visited = set()
-        hub_visited: list[str] = []
         waiting: list[tuple[int, float, str, list[tuple[str, int]]]] = [
             (turn, 0, start, [(start, turn)])
         ]
@@ -38,7 +37,6 @@ class PathFinder:
         while waiting:
             curr_turn, priority, hub_name, path = heapq.heappop(waiting)
             if hub_name == end:
-                hub_visited = []
                 return path
 
             current_state = (hub_name, curr_turn)
@@ -48,6 +46,7 @@ class PathFinder:
 
             next_hubs = self.map_config.connected_to.get(hub_name, [])
             for next_name in next_hubs:
+
                 neighbor = self.map_config.hubs[next_name]
                 if neighbor.zone_type == "blocked":
                     continue
@@ -55,12 +54,14 @@ class PathFinder:
                 zone_cost = self.cost_turn.get(neighbor.zone_type)
                 next_turn = curr_turn + zone_cost
 
+                if (next_name not in (start, end) and
+                        planned_hub.get((next_name, next_turn),
+                                        0) >= neighbor.max_drones):
+                    continue
+
                 move_priority = (0.5 if neighbor.zone_type == "priority"
                                  else self.cost_turn[neighbor.zone_type])
                 next_priority = priority + move_priority
-                hub_ok = (next_name in (start, end) or
-                          planned_hub.get((next_name, next_turn
-                                           ), 0) < neighbor.max_drones)
 
                 hub_one, hub_two = sorted((hub_name, next_name))
                 link = (hub_one, hub_two)
@@ -74,13 +75,12 @@ class PathFinder:
                 link_approved = all(planned_link.get((link, t), 0) < lk_cap
                                     for t in range(curr_turn, next_turn))
 
-                if hub_ok and link_approved and next_name not in hub_visited:
+                if link_approved:
                     heapq.heappush(waiting, (next_turn,
                                              next_priority,
                                              next_name,
                                              path + [(next_name,
                                                       next_turn)]))
-                    hub_visited.append(next_name)
 
             if hub_name != end:
                 current_hub_stay = self.map_config.hubs[hub_name]
@@ -92,7 +92,7 @@ class PathFinder:
                         available_stay < current_hub_stay.max_drones):
                     heapq.heappush(waiting, (
                                              next_turn_stay,
-                                             priority + 1,
+                                             priority + 0.5,
                                              hub_name,
                                              path + [(hub_name,
                                                       next_turn_stay)]))

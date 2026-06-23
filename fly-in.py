@@ -4,6 +4,7 @@ try:
     import arcade
     import subprocess
     import time
+    # from pudb import set_trace
 except ImportError:
     print("Make sure to use: - make install before - make run\n "
           "or to switch on environment before running with"
@@ -12,7 +13,7 @@ except ImportError:
 
 if __name__ == "__main__":
     try:
-
+        # set_trace()
         if len(sys.argv) == 1:
             renderer = MapDisplay(2500, 1400, "Fly-in", "01_linear_path.txt")
             arcade.run()

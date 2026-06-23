@@ -31,6 +31,7 @@ class Color(Enum):
     BROWN = 'brown'
     MAROON = '#633c0f'
     GOLD = '#ab8f03'
+    WHITE = "white"
     DARKRED = '#8B0000'
     VIOLET = '#ae3ede'
     CRIMSON = 'crimson'
@@ -139,6 +140,8 @@ class MapConfig:
 
         if match:
             meta_content = match.group(1)
+            if not meta_content:
+                raise ValueError("[METADATA] Metadata format not respected")
             meta_details = ["zone", "color", "max_drones", "max_link_capacity"]
             main_content = config.replace(match.group(0), '').strip()
             for part in meta_content.split():

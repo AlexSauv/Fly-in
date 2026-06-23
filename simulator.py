@@ -43,8 +43,8 @@ class Manager:
             for (current_hub, current_turn), (next_hub, next_turn) in zip(
                     path, path[1:]):
                 if next_hub != self.end and current_hub != self.end:
-                    self.planned_hub[
-                        next_hub, next_turn] = self.planned_hub.get(
+                    self.planned_hub[(
+                        next_hub, next_turn)] = self.planned_hub.get(
                         (next_hub, next_turn), 0) + 1
 
                 hub_one, hub_two = sorted((current_hub, next_hub))
