@@ -1,4 +1,5 @@
 import arcade
+from arcade.shape_list import ShapeElementList, create_line, create_ellipse_filled
 from algorithm import MapConfig
 from parser import FileParser
 from simulator import Manager
@@ -20,6 +21,7 @@ class MapDisplay(arcade.Window):
         self.background = arcade.load_texture("src/background_img.jpg")
         self.drone_txt = arcade.load_texture("src/drone_img.png")
         self.drone_sprites = arcade.SpriteList()
+        self.shapes = ShapeElementList()
         self.camera = arcade.Camera2D()
         self.load_map_simulation()
 
@@ -39,11 +41,54 @@ class MapDisplay(arcade.Window):
             self.mltp = 99
         else:
             self.mltp = 150
+        
         self.zoom_level = 1.0
         self.simturn: bool = False
         self.simturn_finished = False
         self.drone_move = False
         self.auto = False
+        self.shapes = ShapeElementList()
+
+        connections = self.curr_map.connections
+        hubs = self.curr_map.hubs
+
+        center_x, center_y = self.get_center()
+        for connection in connections:
+            hub_start = connections[connection].hubs[0]
+            hub_end = connections[connection].hubs[1]
+
+            start_x = hub_start.position[0] * self.mltp + center_x
+            start_y = hub_start.position[1] * self.mltp + center_y
+
+            end_x = hub_end.position[0] * self.mltp + center_x
+            end_y = hub_end.position[1] * self.mltp + center_y
+
+            line_shape = create_line(start_x,
+                                     start_y,
+                                     end_x,
+                                     end_y,
+                                     arcade.color.WHITE,
+                                     3)
+            self.shapes.append(line_shape)
+
+        for hub in hubs:
+            x = hubs[hub].position[0] * self.mltp + center_x
+            y = hubs[hub].position[1] * self.mltp + center_y
+            color = hubs[hub].color.upper()
+            if color.startswith("#"):
+                hex_val = color.lstrip("#")
+                color_rgb = (int(hex_val[0:2], 16),
+                             int(hex_val[2:4], 16),
+                             int(hex_val[4:6], 16))
+                # arcade.draw_circle_filled(x, y, 35, color_rgb)
+            elif hasattr(arcade.color, color):
+                color_rgb = getattr(arcade.color, color)
+                # arcade.draw_circle_filled(x, y, 35, color_rgb)
+            else:
+                raise ValueError(f"[DISPLAY] {color} color not found")
+            
+            circle_shape = create_ellipse_filled(x, y, 35, 35, color_rgb)
+            self.shapes.append(circle_shape)
 
         self.set_drone()
         self.update_camera()
@@ -189,6 +234,7 @@ class MapDisplay(arcade.Window):
         hubs = self.curr_map.hubs
         connections = self.curr_map.connections
 
+        self.shapes.draw()
         center_x, center_y = self.get_center()
         for connection in connections:
             hub_start = connections[connection].hubs[0]
@@ -211,23 +257,23 @@ class MapDisplay(arcade.Window):
                         mid_y + 20,
                         arcade.color.WHITE,
                         12).draw()
-            arcade.draw_line(start_x, start_y, end_x, end_y,
-                             arcade.color.WHITE, 3)
+            # arcade.draw_line(start_x, start_y, end_x, end_y,
+            #                  arcade.color.WHITE, 3)
         for hub in hubs:
             x = hubs[hub].position[0] * self.mltp + center_x
             y = hubs[hub].position[1] * self.mltp + center_y
-            color = hubs[hub].color.upper()
-            if color.startswith("#"):
-                hex_val = color.lstrip("#")
-                color_rgb = (int(hex_val[0:2], 16),
-                             int(hex_val[2:4], 16),
-                             int(hex_val[4:6], 16))
-                arcade.draw_circle_filled(x, y, 35, color_rgb)
-            elif hasattr(arcade.color, color):
-                color_rgb = getattr(arcade.color, color)
-                arcade.draw_circle_filled(x, y, 35, color_rgb)
-            else:
-                raise ValueError(f"[DISPLAY] {color} color not found")
+        #     color = hubs[hub].color.upper()
+        #     if color.startswith("#"):
+        #         hex_val = color.lstrip("#")
+        #         color_rgb = (int(hex_val[0:2], 16),
+        #                      int(hex_val[2:4], 16),
+        #                      int(hex_val[4:6], 16))
+        #         arcade.draw_circle_filled(x, y, 35, color_rgb)
+        #     elif hasattr(arcade.color, color):
+        #         color_rgb = getattr(arcade.color, color)
+        #         arcade.draw_circle_filled(x, y, 35, color_rgb)
+        #     else:
+        #         raise ValueError(f"[DISPLAY] {color} color not found")
             arcade.Text(hubs[hub].name,
                         x,
                         y - 50,
