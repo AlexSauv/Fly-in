@@ -1,4 +1,4 @@
-from mapconfig import MapConfig
+from map_config import MapConfig
 import heapq
 
 
@@ -30,13 +30,15 @@ class PathFinder:
             the path, or [] if no path found.
         """
         visited = set()
-        waiting: list[tuple[int, int, str, list[tuple[str, int]]]] = [
+        hub_visited: list[str] = []
+        waiting: list[tuple[int, float, str, list[tuple[str, int]]]] = [
             (turn, 0, start, [(start, turn)])
         ]
 
         while waiting:
             curr_turn, priority, hub_name, path = heapq.heappop(waiting)
             if hub_name == end:
+                hub_visited = []
                 return path
 
             current_state = (hub_name, curr_turn)
@@ -50,10 +52,11 @@ class PathFinder:
                 if neighbor.zone_type == "blocked":
                     continue
 
-                zone_cost = self.cost_turn.get(neighbor.zone_type, 1)
+                zone_cost = self.cost_turn.get(neighbor.zone_type)
                 next_turn = curr_turn + zone_cost
 
-                move_priority = 0 if neighbor.zone_type == "priority" else 1
+                move_priority = (0.5 if neighbor.zone_type == "priority"
+                                 else self.cost_turn[neighbor.zone_type])
                 next_priority = priority + move_priority
                 hub_ok = (next_name in (start, end) or
                           planned_hub.get((next_name, next_turn
@@ -71,12 +74,13 @@ class PathFinder:
                 link_approved = all(planned_link.get((link, t), 0) < lk_cap
                                     for t in range(curr_turn, next_turn))
 
-                if hub_ok and link_approved:
+                if hub_ok and link_approved and next_name not in hub_visited:
                     heapq.heappush(waiting, (next_turn,
                                              next_priority,
                                              next_name,
                                              path + [(next_name,
                                                       next_turn)]))
+                    hub_visited.append(next_name)
 
             if hub_name != end:
                 current_hub_stay = self.map_config.hubs[hub_name]

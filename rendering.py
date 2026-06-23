@@ -1,6 +1,6 @@
 import arcade
-from arcade.shape_list import ShapeElementList, create_line, create_ellipse_filled
-from algorithm import MapConfig
+from typing import Any
+from map_config import MapConfig
 from parser import FileParser
 from simulator import Manager
 
@@ -11,17 +11,27 @@ class MapDisplay(arcade.Window):
         visualisation of drones steps through the map
     """
     def __init__(self, width: int, height: int,
-                 title: str, maps: list[str]):
+                 title: str, map: str):
         super().__init__(width, height, title)
         self.width = width
         self.height = height
-        self.maps = maps
+        self.map = map
+        self.first_map_load = False
+        self.maps = ["maps/easy/01_linear_path.txt",
+                     "maps/easy/02_simple_fork.txt",
+                     "maps/easy/03_basic_capacity.txt",
+                     "maps/medium/01_dead_end_trap.txt",
+                     "maps/medium/02_circular_loop.txt",
+                     "maps/medium/03_priority_puzzle.txt",
+                     "maps/hard/01_maze_nightmare.txt",
+                     "maps/hard/02_capacity_hell.txt",
+                     "maps/hard/03_ultimate_challenge.txt",
+                     "maps/challenger/01_the_impossible_dream.txt"]
         self.maps_index = 0
 
         self.background = arcade.load_texture("src/background_img.jpg")
         self.drone_txt = arcade.load_texture("src/drone_img.png")
-        self.drone_sprites = arcade.SpriteList()
-        self.shapes = ShapeElementList()
+        self.drone_sprites: arcade.SpriteList[Any] = arcade.SpriteList()
         self.camera = arcade.Camera2D()
         self.load_map_simulation()
 
@@ -30,6 +40,16 @@ class MapDisplay(arcade.Window):
             This function handle entrees map
             files and load simulation data
         """
+        if not self.first_map_load:
+            found = False
+            for map in self.maps:
+                if map.endswith(self.map):
+                    self.maps_index = self.maps.index(map)
+                    self.first_map_load = True
+                    found = True
+            if not found:
+                raise ValueError(f"[MAP] The {self.map} map is not found")
+
         current_path = self.maps[self.maps_index]
         map_parsing = FileParser(current_path)
         self.curr_map = MapConfig(map_parsing)
@@ -38,60 +58,17 @@ class MapDisplay(arcade.Window):
         self.simu = Manager(self.curr_map)
         self.simu.initiate_simulation()
         if self.curr_map.map_name == "01_the_impossible_dream":
-            self.mltp = 99
+            self.mltp = 100
         else:
             self.mltp = 150
-        
+
         self.zoom_level = 1.0
         self.simturn: bool = False
         self.simturn_finished = False
         self.drone_move = False
         self.auto = False
-        self.shapes = ShapeElementList()
-
-        connections = self.curr_map.connections
-        hubs = self.curr_map.hubs
-
-        center_x, center_y = self.get_center()
-        for connection in connections:
-            hub_start = connections[connection].hubs[0]
-            hub_end = connections[connection].hubs[1]
-
-            start_x = hub_start.position[0] * self.mltp + center_x
-            start_y = hub_start.position[1] * self.mltp + center_y
-
-            end_x = hub_end.position[0] * self.mltp + center_x
-            end_y = hub_end.position[1] * self.mltp + center_y
-
-            line_shape = create_line(start_x,
-                                     start_y,
-                                     end_x,
-                                     end_y,
-                                     arcade.color.WHITE,
-                                     3)
-            self.shapes.append(line_shape)
-
-        for hub in hubs:
-            x = hubs[hub].position[0] * self.mltp + center_x
-            y = hubs[hub].position[1] * self.mltp + center_y
-            color = hubs[hub].color.upper()
-            if color.startswith("#"):
-                hex_val = color.lstrip("#")
-                color_rgb = (int(hex_val[0:2], 16),
-                             int(hex_val[2:4], 16),
-                             int(hex_val[4:6], 16))
-                # arcade.draw_circle_filled(x, y, 35, color_rgb)
-            elif hasattr(arcade.color, color):
-                color_rgb = getattr(arcade.color, color)
-                # arcade.draw_circle_filled(x, y, 35, color_rgb)
-            else:
-                raise ValueError(f"[DISPLAY] {color} color not found")
-            
-            circle_shape = create_ellipse_filled(x, y, 35, 35, color_rgb)
-            self.shapes.append(circle_shape)
 
         self.set_drone()
-        self.update_camera()
 
     def on_key_press(self, key: int, _: int) -> None:
         """
@@ -118,22 +95,6 @@ class MapDisplay(arcade.Window):
         if key == arcade.key.ESCAPE:
             arcade.exit()
 
-    def update_camera(self) -> None:
-        """ this function is for zooming the map """
-        self.camera.position = (self.width // 2, self.height // 2)
-        self.camera.zoom = 1.0 / self.zoom_level
-
-    def on_mouse_scroll(self, _: int, y: int,
-                        scroll_x: int, scroll_y: int) -> None:
-        """ this function updates zoom on the map by scrolling"""
-        if scroll_y > 0:
-            self.zoom_level -= 0.5
-        else:
-            self.zoom_level += 0.5
-
-        self.zoom_level = max(0.2, min(self.zoom_level, 3.0))
-        self.update_camera()
-
     def set_drone(self) -> None:
         """ this function set drones visual representation"""
         center_x, center_y = self.get_center()
@@ -142,8 +103,8 @@ class MapDisplay(arcade.Window):
         for hub in hubs.values():
             if hub.drones:
                 for drone_data in hub.drones:
-                    drone_sprt = arcade.SpriteCircle(12,
-                                                     arcade.color.WHITE_SMOKE)
+                    drone_sprt: Any = arcade.SpriteCircle(12,
+                                                          arcade.color.PURPLE)
                     drone_sprt = arcade.Sprite(self.drone_txt, scale=0.09)
                     drone_sprt.color = arcade.color.WHITE_SMOKE
                     drone_sprt.center_x = (hub.position[0] *
@@ -224,7 +185,7 @@ class MapDisplay(arcade.Window):
             of map: hubs, connection, capacity
         """
         self.clear()
-        self.camera.use()
+        # self.camera.use()
         arcade.draw_texture_rect(
             self.background,
             arcade.LBWH(0, 0,
@@ -233,9 +194,13 @@ class MapDisplay(arcade.Window):
         self.summary_text()
         hubs = self.curr_map.hubs
         connections = self.curr_map.connections
-
-        self.shapes.draw()
         center_x, center_y = self.get_center()
+
+        ratio = max(0.4, min(self.mltp / 150.0, 1.0))
+        font_size_connections = max(8, int(12 * ratio))
+
+        line_width = max(1, int(3 * ratio))
+
         for connection in connections:
             hub_start = connections[connection].hubs[0]
             hub_end = connections[connection].hubs[1]
@@ -253,32 +218,36 @@ class MapDisplay(arcade.Window):
             total_drones = (f"{drones_co}/"
                             f"{connections[connection].max_link_capacity}")
             arcade.Text(total_drones,
-                        mid_x - 5,
-                        mid_y + 20,
-                        arcade.color.WHITE,
-                        12).draw()
-            # arcade.draw_line(start_x, start_y, end_x, end_y,
-            #                  arcade.color.WHITE, 3)
+                        mid_x,
+                        mid_y + (12 * ratio),
+                        arcade.color.RED,
+                        font_size=font_size_connections).draw()
+            arcade.draw_line(start_x, start_y, end_x, end_y,
+                             arcade.color.WHITE, line_width)
+
+        hub_radius = int(35 * ratio)
+        font_size_hubs = max(8, int(12 * ratio))
+
         for hub in hubs:
             x = hubs[hub].position[0] * self.mltp + center_x
             y = hubs[hub].position[1] * self.mltp + center_y
-        #     color = hubs[hub].color.upper()
-        #     if color.startswith("#"):
-        #         hex_val = color.lstrip("#")
-        #         color_rgb = (int(hex_val[0:2], 16),
-        #                      int(hex_val[2:4], 16),
-        #                      int(hex_val[4:6], 16))
-        #         arcade.draw_circle_filled(x, y, 35, color_rgb)
-        #     elif hasattr(arcade.color, color):
-        #         color_rgb = getattr(arcade.color, color)
-        #         arcade.draw_circle_filled(x, y, 35, color_rgb)
-        #     else:
-        #         raise ValueError(f"[DISPLAY] {color} color not found")
+            color = hubs[hub].color.upper()
+            if color.startswith("#"):
+                hex_val = color.lstrip("#")
+                color_rgb = (int(hex_val[0:2], 16),
+                             int(hex_val[2:4], 16),
+                             int(hex_val[4:6], 16))
+                arcade.draw_circle_filled(x, y, hub_radius, color_rgb)
+            elif hasattr(arcade.color, color):
+                color_rgb = getattr(arcade.color, color)
+                arcade.draw_circle_filled(x, y, hub_radius, color_rgb)
+            else:
+                raise ValueError(f"[DISPLAY] {color} color not found")
             arcade.Text(hubs[hub].name,
                         x,
                         y - 50,
                         arcade.color.WHITE,
-                        font_size=10,
+                        font_size=font_size_hubs,
                         anchor_x='center').draw()
             filled = f"{len(hubs[hub].drones)}/{hubs[hub].max_drones}"
             arcade.Text(filled,
@@ -319,10 +288,8 @@ class MapDisplay(arcade.Window):
                         anchor_y='center').draw()
             return
 
-    def on_update(self, _: int) -> None:
-        """
-            This function update each new event during simulation turns
-        """
+    def on_update(self, delta_time: float) -> None:
+        """ This function update each new event... """
         assert self.curr_map.end_hub is not None
 
         drones_arrived = True
@@ -380,25 +347,3 @@ class MapDisplay(arcade.Window):
             elif total_drones == goal_drones:
                 self.simu.generate_output_file()
                 self.simturn_finished = True
-
-# if __name__ == "__main__":
-#     try:
-#         maps = ["maps/easy/01_linear_path.txt",
-#                 "maps/easy/02_simple_fork.txt",
-#                 "maps/easy/03_basic_capacity.txt",
-#                 "maps/medium/01_dead_end_trap.txt",
-#                 "maps/medium/02_circular_loop.txt",
-#                 "maps/medium/03_priority_puzzle.txt",
-#                 "maps/hard/01_maze_nightmare.txt",
-#                 "maps/hard/02_capacity_hell.txt",
-#                 "maps/hard/03_ultimate_challenge.txt",
-#                 "maps/challenger/01_the_impossible_dream.txt"
-#                 ]
-#         renderer = MapDisplay(2500, 1400, "Fly-in", maps)
-#         arcade.run()
-#     except Exception as e:
-#         print(f"[ERROR] {e}")
-#     except KeyboardInterrupt:
-#         subprocess.run('clear', shell=True)
-#         print("Fly in simulation closed.")
-#         sys.exit(1)

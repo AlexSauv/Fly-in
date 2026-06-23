@@ -1,4 +1,4 @@
-from mapconfig import MapConfig
+from map_config import MapConfig
 from algorithm import PathFinder
 
 
@@ -35,7 +35,7 @@ class Manager:
                 self.start, self.end, 0, self.planned_hub,
                 self.planned_link)
             if not path:
-                raise ValueError(f"[MANAGER] Path not found for {drone}.")
+                raise ValueError(f"[MANAGER] Path not found for D{drone}.")
 
             self.drones_path[drone] = path
             self.drone_step_index[drone] = 0
