@@ -18,6 +18,7 @@ class MapDisplay(arcade.Window):
         self.map = map
         self.first_map_load = False
         self.maps = ["maps/easy/01_linear_path.txt",
+                     "maps/easy/text.txt",
                      "maps/easy/02_simple_fork.txt",
                      "maps/easy/03_basic_capacity.txt",
                      "maps/medium/01_dead_end_trap.txt",
