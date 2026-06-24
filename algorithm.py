@@ -1,13 +1,13 @@
-from map_config import MapConfig
+from map_config import MapConfig, ZoneType
 import heapq
 
 
 class PathFinder:
     def __init__(self, map_config: MapConfig):
         self.map_config = map_config
-        self.cost_turn = {"normal": 1,
-                          "priority": 1,
-                          'restricted': 2}
+        self.cost_turn = {ZoneType.NORMAL: 1,
+                          ZoneType.PRIORITY: 1,
+                          ZoneType.RESTRICTED: 2}
 
     def dijkstra_algo(self, start: str, end: str, turn: int,
                       planned_hub: dict[tuple[str, int], int],
@@ -33,9 +33,12 @@ class PathFinder:
         waiting: list[tuple[int, float, str, list[tuple[str, int]]]] = [
             (turn, 0, start, [(start, turn)])
         ]
+        limit_turn = self.map_config.nb_drones * 5
 
         while waiting:
             curr_turn, priority, hub_name, path = heapq.heappop(waiting)
+            if curr_turn > limit_turn:
+                return []
             if hub_name == end:
                 return path
 
@@ -48,18 +51,19 @@ class PathFinder:
             for next_name in next_hubs:
 
                 neighbor = self.map_config.hubs[next_name]
-                if neighbor.zone_type == "blocked":
+                if neighbor.zone_type == ZoneType.BLOCKED:
                     continue
 
                 zone_cost = self.cost_turn.get(neighbor.zone_type)
-                next_turn = curr_turn + zone_cost
+                if zone_cost:
+                    next_turn = curr_turn + zone_cost
 
                 if (next_name not in (start, end) and
                         planned_hub.get((next_name, next_turn),
                                         0) >= neighbor.max_drones):
                     continue
 
-                move_priority = (0.5 if neighbor.zone_type == "priority"
+                move_priority = (0.5 if neighbor.zone_type == ZoneType.PRIORITY
                                  else self.cost_turn[neighbor.zone_type])
                 next_priority = priority + move_priority
 

@@ -4,7 +4,7 @@ try:
     import re
     from enum import Enum
     from typing_extensions import Self, Optional
-    from pydantic import BaseModel, Field, model_validator
+    from pydantic import BaseModel, Field, model_validator, ValidationError
     from parser import FileParser
 except ImportError:
     print("Make sure to use: - make install before - make run")
@@ -43,11 +43,19 @@ class Color(Enum):
 class Hub(BaseModel):
     """ Create a class for zone based on pydantic model """
     name: str = Field(min_length=2, max_length=30)
-    zone_type: str = Field(default=ZoneType.NORMAL.value)
+    zone_type: ZoneType = Field(default=ZoneType.NORMAL)
     color: str = Field(default=Color.GREEN.value)
-    position: tuple[int, int]
+    position: tuple[int, int] = Field(le=50), Field(le=50)
     drones: list[int] = Field(default_factory=list)
     max_drones: int = Field(default=1, ge=1)
+
+    @model_validator(mode="after")
+    def check_position_limits(self) -> Self:
+        x, y = self.position
+        if x > 30 or y > 30:
+            raise ValueError("Positions (row, col) must "
+                             "be less than or equal to 30.")
+        return self
 
 
 class Connection(BaseModel):
@@ -62,7 +70,7 @@ class Connection(BaseModel):
     @model_validator(mode="after")
     def check_name(self) -> Self:
         if self.hub_name_a == self.hub_name_b:
-            raise ValueError("[Error] Both hub names must differ.")
+            raise ValueError("Both hub names must differ.")
         return self
 
 
@@ -89,42 +97,49 @@ class MapConfig:
 
             return: Return nothing but set the right data in the object
         """
-        lines: list[str] = self.settings
-        if not lines[0].startswith("nb_drones:"):
-            raise ValueError(" [CONFIG] must begin"
-                             " with nb_drones:int")
+        try:
+            lines: list[str] = self.settings
+            if not lines[0].startswith("nb_drones:"):
+                raise ValueError(" [CONFIG] must begin"
+                                 " with nb_drones:int")
 
-        self.nb_drones = int(lines[0].split(":")[1].strip())
-        if self.nb_drones <= 0:
-            raise ValueError("[DRONE] nb_drones must"
-                             " be a positive integer")
+            self.nb_drones = int(lines[0].split(":")[1].strip())
+            if self.nb_drones <= 0:
+                raise ValueError("[DRONE] nb_drones must"
+                                 " be a positive integer")
 
-        for line in lines[1:]:
-            prefix, details = line.split(":")
-            prefix = prefix.strip()
-            content, metadata = self.metadata(details)
-            config = content.split()
+            for line in lines[1:]:
+                prefix, details = line.split(":")
+                prefix = prefix.strip()
+                content, metadata = self.metadata(details)
+                config = content.split()
 
-            if prefix in ("hub", "start_hub", "end_hub"):
-                if len(config) != 3:
-                    raise ValueError("[HUB] The format is not as expected")
+                if prefix in ("hub", "start_hub", "end_hub"):
+                    if len(config) != 3:
+                        raise ValueError("[HUB] The format is not as expected")
 
-                self.generate_hub(prefix,
-                                  config[0],
-                                  config[1],
-                                  config[2],
-                                  metadata)
+                    self.generate_hub(prefix,
+                                      config[0],
+                                      config[1],
+                                      config[2],
+                                      metadata)
 
-            elif prefix in ("connection"):
-                if len(config) != 1:
-                    raise ValueError("[CONNECTION] The argument must "
-                                     "be given as: 'name_1-name_2'")
+                elif prefix in ("connection"):
+                    if len(config) != 1:
+                        raise ValueError("[CONNECTION] The argument must "
+                                         "be given as: 'name_1-name_2'")
 
-                self.generate_connection(config[0], metadata)
-        if not self.start_hub:
-            raise ValueError("[HUB] No start has been register")
-        if not self.end_hub:
-            raise ValueError("[HUB] No end has been register")
+                    self.generate_connection(config[0], metadata)
+                else:
+                    raise ValueError("[PREFIX] Prefix data not found.")
+            if not self.start_hub:
+                raise ValueError("[HUB] No start has been register")
+            if not self.end_hub:
+                raise ValueError("[HUB] No end has been register")
+        except ValidationError as e:
+            raise ValueError(f"[MAPCONFIG] {e.errors()[0]['msg']}")
+        except Exception as e:
+            raise Exception(f"[MAPCONFIG] {e}")
 
     def metadata(self, config: str) -> tuple[str, dict[str, str]]:
         """ This function is used for handling metadata fetch from file
@@ -146,7 +161,7 @@ class MapConfig:
             main_content = config.replace(match.group(0), '').strip()
             for part in meta_content.split():
                 if "=" not in part:
-                    raise ValueError("[METADARA] must be '[details=infos]'")
+                    raise ValueError("[METADATA] must be '[details=infos]'")
                 key, value = part.split("=")
                 if key not in meta_details:
                     raise ValueError(f"[METADATA] {key} key is unknown")
@@ -183,12 +198,11 @@ class MapConfig:
         drones_init: list[int] = []
         pos: tuple[int, int] = (int(row), int(col))
         zone_data = metadata.get("zone", ZoneType.NORMAL.value).upper()
-        zone = zone_data
         color_data = metadata.get("color", "white").upper()
         max_drones_hub = int(metadata.get("max_drones", 1))
 
         if hasattr(ZoneType, zone_data):
-            zone = getattr(ZoneType, zone)
+            zone = getattr(ZoneType, zone_data)
         else:
             raise ValueError(f"[ZONETYPE] {zone_data} Zone type unknown")
 
@@ -198,8 +212,12 @@ class MapConfig:
             raise ValueError(f"[COLOR] {color_data} unknown")
 
         if prefix == "start_hub":
+            if zone == ZoneType.BLOCKED:
+                raise ValueError("[HUB] Start hub type cannot be: blocked.")
             max_drones_hub = self.nb_drones
         elif prefix == "end_hub":
+            if zone == ZoneType.BLOCKED:
+                raise ValueError("[HUB] Start hub type cannot be: blocked.")
             max_drones_hub = self.nb_drones
 
         hub = Hub(
@@ -266,8 +284,7 @@ class MapConfig:
                              hub_name_b=name_two,
                              hubs=[hub_a, hub_b],
                              drones=drones_init,
-                             max_link_capacity=max_capacity
-                             )
+                             max_link_capacity=max_capacity)
         self.connections.setdefault(link_name, connect)
         self.connected_to.setdefault(name_one, []).append(name_two)
         self.connected_to.setdefault(name_two, []).append(name_one)

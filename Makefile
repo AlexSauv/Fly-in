@@ -18,7 +18,7 @@ debug:
 	./venv/bin/$(PY) -m pdb $(NAME) $(ARGS)
 
 clean:
-	rm -rf __pycache__ .mypy__cache
+	rm -rf __pycache__ .mypy_cache
 
 lint:
 	@./venv/bin/$(FLAKE8) . --exclude=venv
