@@ -105,10 +105,11 @@ class MapConfig:
 
             self.nb_drones = int(lines[0].split(":")[1].strip())
             if self.nb_drones <= 0:
-                raise ValueError("[DRONE] nb_drones must"
+                raise ValueError("[DRONE][Line 0] nb_drones must"
                                  " be a positive integer")
-
+            line_count = 0
             for line in lines[1:]:
+                line_count += 1
                 prefix, details = line.split(":")
                 prefix = prefix.strip()
                 content, metadata = self.metadata(details)
@@ -116,8 +117,7 @@ class MapConfig:
 
                 if prefix in ("hub", "start_hub", "end_hub"):
                     if len(config) != 3:
-                        raise ValueError("[HUB] The format is not as expected")
-
+                        raise ValueError("[HUB] Format is not as expected")
                     self.generate_hub(prefix,
                                       config[0],
                                       config[1],
@@ -133,13 +133,14 @@ class MapConfig:
                 else:
                     raise ValueError("[PREFIX] Prefix data not found.")
             if not self.start_hub:
-                raise ValueError("[HUB] No start has been register")
+                raise ValueError("[HUB] No start hub has been register")
             if not self.end_hub:
-                raise ValueError("[HUB] No end has been register")
+                raise ValueError("[HUB] No end hub has been register")
         except ValidationError as e:
-            raise ValueError(f"[MAPCONFIG] {e.errors()[0]['msg']}")
+            raise ValueError(f"[MAPCONFIG][LINE {line_count}]"
+                             f" {e.errors()[0]['msg']}")
         except Exception as e:
-            raise Exception(f"[MAPCONFIG] {e}")
+            raise Exception(f"[MAPCONFIG][LINE {line_count}] {e}")
 
     def metadata(self, config: str) -> tuple[str, dict[str, str]]:
         """ This function is used for handling metadata fetch from file
@@ -200,6 +201,11 @@ class MapConfig:
         zone_data = metadata.get("zone", ZoneType.NORMAL.value).upper()
         color_data = metadata.get("color", "white").upper()
         max_drones_hub = int(metadata.get("max_drones", 1))
+
+        other_pos = [hub.position for hub in self.hubs.values()]
+        if pos in other_pos:
+            raise ValueError(f"[HUB] Position {pos} has been "
+                             "already register for an other hub")
 
         if hasattr(ZoneType, zone_data):
             zone = getattr(ZoneType, zone_data)
