@@ -116,7 +116,7 @@ class Manager:
         if turn_moves:
             print(f"\n[Turn {self.turn}]: " + " ".join(turn_moves))
             self.turn_moves.append(turn_moves)
-        return drones_active
+        return True
 
     def generate_output_file(self) -> None:
         """

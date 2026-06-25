@@ -26,8 +26,8 @@ def main() -> None:
         else:
             raise ValueError("[ARGS] Number of arguments incompatible")
 
-    except Exception as e:
-        print(f"[ERROR] {e}")
+    # except Exception as e:
+    #     print(f"[ERROR] {e}")
     except KeyboardInterrupt:
         subprocess.run('clear', shell=True)
         print("Fly in simulation closed.")

@@ -70,6 +70,23 @@ class MapDisplay(arcade.Window):
         self.auto = False
 
         self.set_drone()
+        self.precompute_drone_pos()
+
+    def precompute_drone_pos(self):
+        """
+        pre calculate coordinate (x, y) for each drone during each turns
+        """
+        self.drone_pos_by_turn = {}
+        center_x = self.width / 2
+        center_y = self.height / 2
+
+        for drone_id, path in self.simu.drones_path.items():
+            for hub_name, turn in path:
+                hub = self.curr_map.hubs[hub_name]
+                pos_x = hub.position[0] * self.mltp + center_x
+                pos_y = hub.position[1] * self.mltp + center_y
+
+                self.drone_pos_by_turn[(drone_id, turn)] = (pos_x, pos_y)
 
     def on_key_press(self, key: int, _: int) -> None:
         """
@@ -114,7 +131,7 @@ class MapDisplay(arcade.Window):
                                            self.mltp + center_y)
                     drone_sprt.target_x = drone_sprt.center_x
                     drone_sprt.target_y = drone_sprt.center_y
-                    drone_sprt.s_drone = drone_data
+                    drone_sprt.id_drone = drone_data
 
                     self.drone_sprites.append(drone_sprt)
 
@@ -186,7 +203,7 @@ class MapDisplay(arcade.Window):
             of map: hubs, connection, capacity
         """
         self.clear()
-        # self.camera.use()
+        self.camera.use()
         arcade.draw_texture_rect(
             self.background,
             arcade.LBWH(0, 0,
@@ -261,7 +278,7 @@ class MapDisplay(arcade.Window):
 
         self.drone_sprites.draw()
         for drone_num in self.drone_sprites:
-            num = str(drone_num.s_drone)
+            num = str(drone_num.id_drone)
 
             n_drone_x = drone_num.center_x
             n_drone_y = drone_num.center_y
@@ -293,58 +310,93 @@ class MapDisplay(arcade.Window):
         """ This function update each new event... """
         assert self.curr_map.end_hub is not None
 
-        drones_arrived = True
+        # if not self.first_map_load:
+        #     return
+
+        # drones_arrived = True
         total_drones = len(self.drone_sprites)
         goal_drones = len(self.curr_map.end_hub.drones)
-        center_x, center_y = self.get_center()
+        # center_x, center_y = self.get_center()
 
-        for drone in self.drone_sprites:
-            dis_x = drone.target_x - drone.center_x
-            dis_y = drone.target_y - drone.center_y
+        # for drone in self.drone_sprites:
+        #     dis_x = drone.target_x - drone.center_x
+        #     dis_y = drone.target_y - drone.center_y
 
-            if abs(dis_x) > 1 or abs(dis_y) > 1:
-                drones_arrived = False
-                drone.center_x += dis_x * 0.4
-                drone.center_y += dis_y * 0.4
-            else:
-                drone.center_x = drone.target_x
-                drone.center_y = drone.target_y
+        #     if abs(dis_x) > 1 or abs(dis_y) > 1:
+        #         drones_arrived = False
+        #         drone.center_x += dis_x * 0.4
+        #         drone.center_y += dis_y * 0.4
+        #     else:
+        #         drone.center_x = drone.target_x
+        #         drone.center_y = drone.target_y
 
-        if drones_arrived:
+        # if drones_arrived:
+        #     self.drone_move = False
+        #     if self.auto and not self.simturn_finished:
+        #         self.simturn = self.simu.simulation_turn()
+        #         self.drone_move = True
+
+        #     if self.simturn:
+        #         hubs = self.curr_map.hubs
+        #         for drone in self.drone_sprites:
+        #             in_hub = False
+        #             for hub in hubs.values():
+        #                 if drone.s_drone in hub.drones:
+        #                     in_hub = True
+        #                     drone.target_x = (hub.position[0] *
+        #                                       self.mltp + center_x)
+        #                     drone.target_y = (hub.position[1] *
+        #                                       self.mltp + center_y)
+        #                     break
+        #             if not in_hub:
+        #                 connections = self.curr_map.connections
+        #                 for connect in connections.values():
+        #                     if drone.s_drone in connect.drones:
+        #                         hub_start = connect.hubs[0]
+        #                         hub_end = connect.hubs[1]
+
+        #                         mid_x = (hub_start.position[0] +
+        #                                  hub_end.position[0]) / 2
+        #                         mid_y = (hub_start.position[1] +
+        #                                  hub_end.position[1]) / 2
+
+        #                         drone.target_x = mid_x * self.mltp + center_x
+        #                         drone.target_y = mid_y * self.mltp + center_y
+        #                         break
+        if self.simturn:
+            curr_turn = self.simu.turn
+            for sprite in self.drone_sprites:
+                drone_id = sprite.id_drone
+                pos = self.drone_pos_by_turn.get((drone_id, curr_turn))
+
+                if pos:
+                    sprite.target_x, sprite.target_y = pos
+            self.simturn = False
+            self.drone_move = True
+
+        moving = False
+        if self.drone_move:
+            for sprite in self.drone_sprites:
+                dx = sprite.target_x - sprite.center_x
+                dy = sprite.target_y - sprite.center_y
+                
+                if abs(dx) > 1 or abs(dy) > 1:
+                    sprite.center_x += dx * 0.4
+                    sprite.center_y += dy * 0.4
+                    moving = True
+                else:
+                    sprite.center_x = sprite.target_x
+                    sprite.center_y = sprite.target_y
+                    
+        if not moving and self.drone_move:
             self.drone_move = False
-            if self.auto and not self.simturn_finished:
-                self.simturn = self.simu.simulation_turn()
-                self.drone_move = True
-
-            if self.simturn:
-                hubs = self.curr_map.hubs
-                for drone in self.drone_sprites:
-                    in_hub = False
-                    for hub in hubs.values():
-                        if drone.s_drone in hub.drones:
-                            in_hub = True
-                            drone.target_x = (hub.position[0] *
-                                              self.mltp + center_x)
-                            drone.target_y = (hub.position[1] *
-                                              self.mltp + center_y)
-                            break
-                    if not in_hub:
-                        connections = self.curr_map.connections
-                        for connect in connections.values():
-                            if drone.s_drone in connect.drones:
-                                hub_start = connect.hubs[0]
-                                hub_end = connect.hubs[1]
-
-                                mid_x = (hub_start.position[0] +
-                                         hub_end.position[0]) / 2
-                                mid_y = (hub_start.position[1] +
-                                         hub_end.position[1]) / 2
-
-                                drone.target_x = mid_x * self.mltp + center_x
-                                drone.target_y = mid_y * self.mltp + center_y
-                                break
-                self.simturn = False
-                self.drone_move = True
-            elif total_drones == goal_drones:
-                self.simu.generate_output_file()
-                self.simturn_finished = True
+            if total_drones == goal_drones:
+                if not self.simturn_finished:
+                    self.simu.generate_output_file()
+                    self.simturn_finished = True
+            elif self.auto and not self.simturn_finished:
+                has_moved = self.simu.simulation_turn()
+                if has_moved:
+                    self.simturn = True
+                else:
+                    self.simturn_finished = True

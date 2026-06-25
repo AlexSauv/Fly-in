@@ -4,9 +4,13 @@
 
 ## 📝 Description
 
-The purpose of this project is to understand time-dependent algorithms and computational complexity through the simulation of a drone fleet navigating diverse maps with structural restrictions. 
+The **Fly-In** project is an optimization and simulation platform designed to coordinate a fleet of autonomous drones across a network of connected hubs. Operating in a discrete, turn-based environment, multiple drones must safely travel from a single starting base (`start_hub`) to a final destination (`end_hub`) while minimizing the total number of simulation turns.
 
-Drones operate simultaneously in discrete turns, with the ability to either move to an adjacent zone or strategically wait in place. The core challenge lies in designing an intelligent routing system capable of solving spatial conflicts, respecting strict capacity constraints (both for zones and connections), and dynamically discovering alternative paths. The ultimate goal is to optimize the throughput of the fleet to complete the simulation in the fewest possible turns.
+The core difficulty lies in dynamic conflict resolution and strict constraint adherence. The routing framework manages:
+
+**Spatial-Temporal Constraints:** Ensuring that zone capacities (`max_drones`) are never breached during any specific turn.
+- **Connection Traffic Limits:** Throttling the concurrent flow of drones on standard edges (`max_link_capacity`).
+- **Heterogeneous Zone Costs:** Dynamically adjusting path costs depending on terrain types (Normal: 1 turn, Restricted: 2 turns, Priority: 1 turn but prioritized cost (0.5 weight), Blocked: Inaccessible).
 
 ### Algorithm Choices & Implementation Strategy
 
@@ -15,27 +19,32 @@ Drones operate simultaneously in discrete turns, with the ability to either move
 The pathfinding core relies on a customized Time-Dependent Dijkstra Algorithm engineered to navigate spatial-temporal constraints without collisions.
 
 #### 1.Space-Time calculation
+Standard shortest-path algorithms are blind to temporal conflicts. To prevent collisions before drones take off, our pathfinder implements a custom Time-Dependent Dijkstra.
 
-For each drones the pathfinder will be able to evaluate capacity of a target hub during each turn. To handle dynamic occupancy my algorithm will register into a dict: (hub_name, the current turn) and the drone occupancy. 
+- State Representation: The graph exploration states tracking is expanded into a 3D space-time coordinate tuple: (hub_name, execution_turn).
+
+- Dynamic Occupancy Look-up: Centralized dictionaries (planned_hub and planned_link) record precisely how many units are scheduled on any zone or connection during an exact time-step.
 
 #### 2. Conflict Resolution & Capacity Checking
 
-##### During the plannification the algorithm will tracks enforce constraints to recalculate paths for drones:
+- Simultaneous Actions: Drones leaving an overloaded hub free up slot capacity on that exact turn, enabling oncoming drones to transition smoothly into the newly vacated spot.
 
-- ##### Zone Capacities: Drone actions will evaluate the capacity of the target hub. At the exact turn of their planned arrival (next_turn). If the reservation count reaches the limit, the path is discarded.
+- Strategic Waiting: If all forward paths are saturated, the Dijkstra algorithm evaluates a "stay-in-place" virtual edge, verifying if the current hub can let stay the drone for an extra turn until bottlenecks clear out.
 
-- ##### Connection Capacities: For links restricted by max_link_capacity, the algorithm continuously checks the availability across the entire duration of the transit (crucial for RESTRICTED zones which require a 2-turn movement cost).
+- Restricted Zone Overheads: Moving into a restricted zone costs 2 turns. The algorithm reserves transit windows ahead of time, ensuring destination slots are booked for turn + 2 to avoid illegal middle-of-the-link standstills.
 
-- ##### Strategie Waiting: Drones can choose to stay in their current hub for 1 turn (next_turn_stay = curr_turn + 1) if paths ahead are bottlenecked, provided the current hub's capacity permits it.
+- Priorities: Priority cost favor PRIORITY zones (cost 0.5 instead 1.0), driving the fly toward optimal path and avoid unnecessary moves.
 
-#### 3. Queue Priority & Safety Mechanics
+- Infinite Loop Protection: A safety benchmark limit_turn (scaled linearly to nb_drones * 5) automatically terminates deadlocked or non-viable exploration branches.
 
-- ##### Priorities: Priority cost favor PRIORITY zones (cost 0.5 instead 1.0), driving the fly toward optimal path.
+### Visual Representation
+The simulation features a rich graphical user interface built via the Arcade framework. It enhances peer evaluation by providing:
 
-- ##### Determination Sorting: The heapq multi-tuple structure uses an internal unique counter flag to prevent TypeError exceptions when evaluatiing identical priority paths 
+Real-time sprite indicators showing drone positions, transit vectors, and hub queues.
 
-- ##### Infinite Loop Protection: A safety benchmark limit_turn (scaled linearly to nb_drones * 5) automatically terminates deadlocked or non-viable exploration branches.
+Dynamic color-coding maps mirroring custom metadata criteria loaded from map files.
 
+Automated generation of a conforming output_file.txt log sequence detailing step-by-step turn mechanics.
 
 ## 🛠️ Instructions
 
@@ -43,17 +52,19 @@ For each drones the pathfinder will be able to evaluate capacity of a target hub
 Before running the project, ensure you have Python 3.10 or later installed. It must use a virtual environment (`venv`).
 
 ### Installation & Setup
-The program has to be execute with the Makefile, in order to work properly it has to install packages with make install, it should activate the virtual environment if it is not the case and then can be run with two differents possibility: first with - make run, the second with - python3 fly-in.py file_name_map.txt
+To isolate dependencies and install all depencies, run:
 
-To install all required dependencies automatically, run:
 ```bash 
 make install
 ```
+This command initializes a local virtual environment (./venv) and pulls down required libraries such as pydantic, arcade, flake8, and mypy.
 
 ### Execution
+To run the default simulation layout from the first map (01_linear_path.txt), use:
 ```bash 
 make run
 ```
+To test custom configurations or harder maps, pass the file path via the ARGS parameter:
 ```bash 
 python3 fly-in.py file_name_map.txt
 ```
@@ -67,6 +78,7 @@ python3 fly-in.py file_name_map.txt
 - https://www.datacamp.com/tutorial/dijkstra-algorithm-in-python
 - https://www.w3schools.com/dsa/dsa_algo_graphs_dijkstra.php
 - https://major-prepa.com/python/algorithme-dijkstra/
+- https://ahmedhanibrahim.wordpress.com/2016/04/15/solving-time-dependent-graph-using-modified-dijkstra-algorithm/
 - Youtube tutorial videos
 
 #### *For Graphic Representation*
