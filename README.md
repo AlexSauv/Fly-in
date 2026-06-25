@@ -12,7 +12,7 @@ The core difficulty lies in dynamic conflict resolution and strict constraint ad
 - **Connection Traffic Limits:** Throttling the concurrent flow of drones on standard edges (`max_link_capacity`).
 - **Heterogeneous Zone Costs:** Dynamically adjusting path costs depending on terrain types (Normal: 1 turn, Restricted: 2 turns, Priority: 1 turn but prioritized cost (0.5 weight), Blocked: Inaccessible).
 
-### Algorithm Choices & Implementation Strategy
+### Algorithm Explanation & Implementation Strategy
 
 #### Djikstra Time-Dependant
 
@@ -79,7 +79,7 @@ python3 fly-in.py file_name_map.txt
 - https://www.w3schools.com/dsa/dsa_algo_graphs_dijkstra.php
 - https://major-prepa.com/python/algorithme-dijkstra/
 - https://ahmedhanibrahim.wordpress.com/2016/04/15/solving-time-dependent-graph-using-modified-dijkstra-algorithm/
-- Youtube tutorial videos
+- [Youtube tutorial videos](https://www.youtube.com/watch?v=EaphyqKU4PQ)
 
 #### *For Graphic Representation*
 - https://api.arcade.academy/en/3.3.3/example_code/sprite_collect_coins_background.html#sprite-collect-coins-background
@@ -95,21 +95,4 @@ python3 fly-in.py file_name_map.txt
 
 #### *How AI  was used*
 - For readme rendering and english rephrases
-- Last resort for debugging graph rendering
 - Used for understanding deeper few concepts
-
-
-• A “Description” section that clearly presents the project, including its goal and a
-brief overview.
-• An “Instructions” section containing any relevant information about compilation,
-installation, and/or execution.
-• A “Resources” section listing classic references related to the topic (documentation, articles, tutorials, etc.), as well as a description of how AI was used —
-specifying for which tasks and which parts of the project.
-➠ Additional sections may be required depending on the project (e.g., usage
-examples, feature list, technical choices, etc.).
-Any required additions will be explicitly listed below.
-• A detailed description of your algorithm choices and implementation strategy must
-also be included.
-• Documentation of the visual representation features and how they enhance the user
-experience.
-Your README must be written in English.
