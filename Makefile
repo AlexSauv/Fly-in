@@ -1,4 +1,4 @@
-NAME= fly-in.py
+NAME= fly_in.py
 PY= python3
 MYPY= mypy
 FLAKE8= flake8

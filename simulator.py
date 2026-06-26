@@ -114,7 +114,6 @@ class Manager:
                 self.drone_step_index[drone] += 1
 
         if turn_moves:
-            print(f"\n[Turn {self.turn}]: " + " ".join(turn_moves))
             self.turn_moves.append(turn_moves)
         return drones_active
 

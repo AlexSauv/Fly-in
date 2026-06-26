@@ -15,8 +15,10 @@ class PathFinder:
                           tuple[str, str], int],
                           int]) -> list[tuple[str, int]]:
         """
-        Finds the shortest time-dependent path between two hubs using Dijkstra
-        algorithm.
+        Finds the shortest time-dependent path between hubs using Dijkstra
+        algorithm. It will recalculate each possiblity depending on the cost
+        and the minimum amount as possible turns to reach the end hub and find
+        the better path for each drones dependanding on capacity constraints.
 
         Args:
             start: Name of the start hub.

@@ -62,7 +62,7 @@ This command initializes a local virtual environment (./venv) and pulls down req
 ### Execution
 To run the default simulation layout from the first map (01_linear_path.txt), use:
 ```bash 
-make run
+make run AGRS=file_name_map.txt
 ```
 To test custom configurations or harder maps, pass the file path via the ARGS parameter:
 ```bash 
