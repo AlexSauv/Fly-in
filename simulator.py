@@ -125,4 +125,5 @@ class Manager:
         file = "output_file.txt"
         with open(file, 'w') as f:
             for turn in self.turn_moves:
-                f.write(f"{turn}\n")
+                turn_act = ', '.join(turn)
+                f.write(f"{turn_act} \n")
