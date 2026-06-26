@@ -99,15 +99,15 @@ class MapConfig:
         """
         try:
             lines: list[str] = self.settings
+            line_count = 0
             if not lines[0].startswith("nb_drones:"):
                 raise ValueError(" [CONFIG] must begin"
                                  " with nb_drones:int")
 
             self.nb_drones = int(lines[0].split(":")[1].strip())
             if self.nb_drones <= 0:
-                raise ValueError("[DRONE][Line 0] nb_drones must"
+                raise ValueError("[DRONE] nb_drones must"
                                  " be a positive integer")
-            line_count = 0
             for line in lines[1:]:
                 line_count += 1
                 prefix, details = line.split(":")
@@ -166,7 +166,10 @@ class MapConfig:
                 key, value = part.split("=")
                 if key not in meta_details:
                     raise ValueError(f"[METADATA] {key} key is unknown")
-                meta_data[key] = value
+                if key in meta_data:
+                    raise ValueError(f"[METADATA] {key} key already register")
+                else:
+                    meta_data[key] = value
         else:
             main_content = config
             meta_content = None
@@ -200,7 +203,10 @@ class MapConfig:
         pos: tuple[int, int] = (int(row), int(col))
         zone_data = metadata.get("zone", ZoneType.NORMAL.value).upper()
         color_data = metadata.get("color", "white").upper()
-        max_drones_hub = int(metadata.get("max_drones", 1))
+
+        max_drones_hub = 1
+        if prefix != 'start_hub' and prefix != 'end_hub':
+            max_drones_hub = int(metadata.get("max_drones", "1"))
 
         other_pos = [hub.position for hub in self.hubs.values()]
         if pos in other_pos:
@@ -218,13 +224,25 @@ class MapConfig:
             raise ValueError(f"[COLOR] {color_data} unknown")
 
         if prefix == "start_hub":
-            if zone == ZoneType.BLOCKED:
-                raise ValueError("[HUB] Start hub type cannot be: blocked.")
-            max_drones_hub = self.nb_drones
+            if zone != ZoneType.NORMAL:
+                raise ValueError("[HUB] Start hub type cannot"
+                                 " be other than normal.")
+            max_drones_hub = (int(metadata['max_drones'])
+                              if 'max_drones' in metadata else self.nb_drones)
+            if max_drones_hub:
+                if max_drones_hub != self.nb_drones:
+                    raise ValueError("[HUB] Start hub must have max"
+                                     " same amount as nb_drones")
         elif prefix == "end_hub":
-            if zone == ZoneType.BLOCKED:
-                raise ValueError("[HUB] Start hub type cannot be: blocked.")
-            max_drones_hub = self.nb_drones
+            if zone != ZoneType.NORMAL:
+                raise ValueError("[HUB] Start hub type cannot"
+                                 " be other than normal.")
+            max_drones_hub = (int(metadata['max_drones'])
+                              if 'max_drones' in metadata else self.nb_drones)
+            if max_drones_hub:
+                if max_drones_hub != self.nb_drones:
+                    raise ValueError("[HUB] End hub must have max"
+                                     " same amount as nb_drones")
 
         hub = Hub(
             name=name_hub,
