@@ -1,6 +1,6 @@
 import arcade
 from typing import Any
-from map_config import MapConfig
+from map_config import MapConfig, ZoneType
 from parser import FileParser
 from simulator import Manager
 
@@ -32,13 +32,13 @@ class MapDisplay(arcade.Window):
         self.background = arcade.load_texture("src/background_img.jpg")
         self.drone_txt = arcade.load_texture("src/drone_img.png")
         self.drone_sprites: arcade.SpriteList[Any] = arcade.SpriteList()
-        self.hub_colors_cache = {}
+        self.hub_colors_cache: dict[str, Any] = {}
         self.camera = arcade.Camera2D()
 
-        self.sum_text_list = []
-        self.hub_text_objects = {}
-        self.connection_text_objects = {}
-        self.map_title_text = None
+        self.sum_text_list: list[arcade.Text] = []
+        self.hub_text_objects: dict[str, dict[str, arcade.Text]] = {}
+        self.connection_text_objects: dict[str, arcade.Text] = {}
+        self.map_title_text: arcade.Text | None = None
 
         self.setup_sum_text()
         self.load_map_simulation()
@@ -103,7 +103,7 @@ class MapDisplay(arcade.Window):
 
         self.update_text_cache()
 
-    def pre_drone_pos(self):
+    def pre_drone_pos(self) -> None:
         """
         pre calculate coordinate (x, y) for each drone during each turns
         """
@@ -253,7 +253,7 @@ class MapDisplay(arcade.Window):
         offset_y = (self.height / 2) - (center_y * self.mltp)
 
         return offset_x, offset_y
-   
+
     def setup_sum_text(self) -> None:
         """
             This function is used to pre-set
@@ -270,8 +270,22 @@ class MapDisplay(arcade.Window):
             arcade.Text("[KEY] A           -> Auto mode (on/off)", 30, 60,
                         arcade.color.WHITE, 12),
             arcade.Text("[KEY] RIGHT   -> Next turn (with auto disabled)",
-                        30, 40, arcade.color.WHITE, 12)
-        ]
+                        30, 40, arcade.color.WHITE, 12),
+            arcade.Text("RING COLOR ZONE SUMMARY:", self.width - 430, 150,
+                        arcade.color.WHITE, 12),
+            arcade.Text("[COLOR] RED                -> BLOCKED ZONE",
+                        self.width - 430, 60,
+                        arcade.color.WHITE, 12),
+            arcade.Text("[COLOR] GREEN            -> PRIORITY",
+                        self.width - 430, 100,
+                        arcade.color.WHITE, 12),
+            arcade.Text("[COLOR] WHITE             -> NORMAL",
+                        self.width - 430, 120,
+                        arcade.color.WHITE, 12),
+            arcade.Text("[COLOR] ORANGE         -> RESTRICTED",
+                        self.width - 430, 80,
+                        arcade.color.WHITE, 12)
+                        ]
 
     def on_draw(self) -> None:
         """
@@ -293,7 +307,11 @@ class MapDisplay(arcade.Window):
 
         line_width = max(1, int(3 * ratio))
         hub_radius = int(35 * ratio)
+        hub_radius_zone = int(38 * ratio)
         hubs = self.curr_map.hubs
+
+        for text_obj in self.sum_text_list:
+            text_obj.draw()
 
         for link_name, connection in connections.items():
             hub_start = connection.hubs[0]
@@ -316,6 +334,18 @@ class MapDisplay(arcade.Window):
             x = hubs[hub].position[0] * self.mltp + center_x
             y = hubs[hub].position[1] * self.mltp + center_y
             color_rgb = self.hub_colors_cache[hub_id]
+            if hubs[hub].zone_type == ZoneType.NORMAL:
+                arcade.draw_circle_filled(x, y, hub_radius_zone,
+                                          arcade.color.WHITE)
+            elif hubs[hub].zone_type == ZoneType.PRIORITY:
+                arcade.draw_circle_filled(x, y, hub_radius_zone,
+                                          arcade.color.GREEN)
+            elif hubs[hub].zone_type == ZoneType.RESTRICTED:
+                arcade.draw_circle_filled(x, y, hub_radius_zone,
+                                          arcade.color.ORANGE)
+            else:
+                arcade.draw_circle_filled(x, y, hub_radius_zone,
+                                          arcade.color.RED)
             arcade.draw_circle_filled(x, y, hub_radius, color_rgb)
 
             if hub_id in self.hub_text_objects:
@@ -379,8 +409,8 @@ class MapDisplay(arcade.Window):
                 dy = sprite.target_y - sprite.center_y
 
                 if abs(dx) > 1 or abs(dy) > 1:
-                    sprite.center_x += dx * 0.4
-                    sprite.center_y += dy * 0.4
+                    sprite.center_x += dx * 0.35
+                    sprite.center_y += dy * 0.35
                     moving = True
                 else:
                     sprite.center_x = sprite.target_x
@@ -395,4 +425,3 @@ class MapDisplay(arcade.Window):
                     self.simturn_finished = True
         if self.auto and not self.simturn_finished and not self.drone_move:
             self.simturn = self.simu.simulation_turn()
-

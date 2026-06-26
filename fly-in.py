@@ -16,18 +16,18 @@ def main() -> None:
         if sys.prefix == sys.base_prefix:
             raise ValueError("You must be on Virtual Environment"
                              " to execute the program.")
-        if len(sys.argv) == 1:
-            MapDisplay(2500, 1400, "Fly-in", "01_linear_path.txt")
-            arcade.run()
         if len(sys.argv) == 2:
             user_input = sys.argv[1].strip()
             MapDisplay(2500, 1400, "Fly-in", user_input)
             arcade.run()
         else:
-            raise ValueError("[ARGS] Number of arguments incompatible")
+            raise ValueError("[ARGS] The input must be either:\n"
+                             " - make run ARGS=map_name.txt\n"
+                             " - python3 fly-in.py map_name.txt\n\n")
 
     except Exception as e:
         print(f"[ERROR] {e}")
+        sys.exit(1)
     except KeyboardInterrupt:
         subprocess.run('clear', shell=True)
         print("Fly in simulation closed.")
