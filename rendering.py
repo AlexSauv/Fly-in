@@ -1,7 +1,11 @@
-import arcade
+import sys
+try:
+    import arcade
+except ImportError:
+    print("Make sure to use: - make install before - make run")
+    sys.exit(0)
 from typing import Any
 from map_config import MapConfig, ZoneType
-# from parser import FileParser
 from simulator import Manager
 
 
@@ -59,7 +63,6 @@ class MapDisplay(arcade.Window):
                 raise ValueError(f"[MAP] The {self.map} map is not found")
 
         current_path = self.maps[self.maps_index]
-        # map_parsing = FileParser(current_path)
         self.curr_map = MapConfig(current_path)
         self.curr_map.generate_map()
 
@@ -309,7 +312,8 @@ class MapDisplay(arcade.Window):
         hub_radius = int(35 * ratio)
         hub_radius_zone = int(38 * ratio)
         hubs = self.curr_map.hubs
-
+        if self.map_title_text:
+            self.map_title_text.draw()
         for text_obj in self.sum_text_list:
             text_obj.draw()
 
