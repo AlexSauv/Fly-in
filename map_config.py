@@ -5,7 +5,6 @@ try:
     from enum import Enum
     from typing_extensions import Self, Optional
     from pydantic import BaseModel, Field, model_validator, ValidationError
-    from parser import FileParser
 except ImportError:
     print("Make sure to use: - make install before - make run")
     sys.exit(0)
@@ -45,7 +44,7 @@ class Hub(BaseModel):
     name: str = Field(min_length=2, max_length=30)
     zone_type: ZoneType = Field(default=ZoneType.NORMAL)
     color: str = Field(default=Color.GREEN.value)
-    position: tuple[int, int] = Field(le=50), Field(le=50)
+    position: tuple[int, int]
     drones: list[int] = Field(default_factory=list)
     max_drones: int = Field(default=1, ge=1)
 
@@ -77,16 +76,40 @@ class Connection(BaseModel):
 class MapConfig:
     """ Create Map OOP for handle each details of the map, regrouping hubs,
       drones, connections and data for each of them """
-    def __init__(self, settings: FileParser):
-        self.settings = settings.fetch_infos()
-        self.map_name = settings.name_file.split(
+    def __init__(self, name_file: str):
+        self.name_file = name_file
+        self.map_name = self.name_file.split(
             "/")[-1].removesuffix(".txt")
+        self.settings = self.fetch_infos()
         self.nb_drones = 0
         self.start_hub: Optional[Hub] = None
         self.end_hub: Optional[Hub] = None
         self.hubs: dict[str, Hub] = {}
         self.connections: dict[str, Connection] = {}
         self.connected_to: dict[str, list[str]] = {}
+
+    def fetch_infos(self) -> list[str]:
+        """ reading file and pre-checking format"""
+        settings: list[str] = []
+        try:
+            with open(self.name_file, 'r') as file:
+                for line_num, line in enumerate(file, 1):
+                    cleaned_line = line.strip()
+                    settings.append(cleaned_line)
+                    if not cleaned_line or cleaned_line.startswith("#"):
+                        continue
+                    if ":" not in cleaned_line:
+                        print(f"[ERROR][LINE {line_num}][FILE FORMAT] The"
+                              " format is 'key:value [optional=detail]'")
+                        sys.exit(0)
+
+        except OSError:
+            print(f"[Error] Cannot read file named: {self.name_file}.")
+            sys.exit(0)
+        if not settings:
+            print("[Error] Empty datas setting.")
+            sys.exit(0)
+        return settings
 
     def generate_map(self) -> None:
         """ This function set all data combines for hubs,
@@ -97,14 +120,28 @@ class MapConfig:
 
             return: Return nothing but set the right data in the object
         """
+        line_count = 0
         try:
             lines: list[str] = self.settings
-            line_count = 0
-            if not lines[0].startswith("nb_drones:"):
-                raise ValueError(" [CONFIG] must begin"
-                                 " with nb_drones:int")
+            drone_line_idx = 0
 
-            self.nb_drones = int(lines[0].split(":")[1].strip())
+            for index, line in enumerate(lines):
+                cleaned = line.strip()
+                if cleaned.startswith("#") or not cleaned:
+                    continue
+                if cleaned.startswith("nb_drones:"):
+                    drone_line_idx = index
+                    break
+                else:
+                    line_count = index + 1
+                    raise ValueError(" [CONFIG] must begin"
+                                     " with nb_drones:int")
+            drone_line: str = lines[drone_line_idx].strip()
+            if drone_line is None:
+                raise ValueError("[CONFIG] Nb_drones is missing")
+
+            drone_line = lines[drone_line_idx].strip()
+            self.nb_drones = int(drone_line.split(":")[1].strip())
             if self.nb_drones <= 0:
                 raise ValueError("[DRONE] nb_drones must over 0")
             if self.nb_drones > 100:
@@ -120,9 +157,14 @@ class MapConfig:
                 else:
                     raise ValueError("Answer invalid.The system will close,"
                                      " next time make sure to answer y or n")
-            for line in lines[1:]:
-                line_count += 1
-                prefix, details = line.split(":")
+            for index, line in enumerate(lines[drone_line_idx + 1:],
+                                         start=drone_line_idx + 2):
+                line_count = index
+                cleaned = line.strip()
+                if line.startswith("#") or len(line) == 0:
+                    continue
+                lined = line.split("#")[0].strip()
+                prefix, details = lined.split(":")
                 prefix = prefix.strip()
                 content, metadata = self.metadata(details)
                 config = content.split()

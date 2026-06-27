@@ -1,7 +1,7 @@
 import arcade
 from typing import Any
 from map_config import MapConfig, ZoneType
-from parser import FileParser
+# from parser import FileParser
 from simulator import Manager
 
 
@@ -59,8 +59,8 @@ class MapDisplay(arcade.Window):
                 raise ValueError(f"[MAP] The {self.map} map is not found")
 
         current_path = self.maps[self.maps_index]
-        map_parsing = FileParser(current_path)
-        self.curr_map = MapConfig(map_parsing)
+        # map_parsing = FileParser(current_path)
+        self.curr_map = MapConfig(current_path)
         self.curr_map.generate_map()
 
         self.simu = Manager(self.curr_map)
