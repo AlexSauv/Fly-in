@@ -5,11 +5,12 @@ FLAKE8= flake8
 PYDANTIC = pydantic
 ARCADE = arcade
 
-.PHONY: install run debug lint lint-strict clean
+.PHONY: install run debug lint lint-strict clean clean-strict
 
 install:
-	python3 -m venv venv
-	./venv/bin/pip install $(MYPY) $(FLAKE8) $(PYDANTIC) $(ARCADE)	
+	$(PY) -m venv venv
+	./venv/bin/pip install --upgrade pip
+	./venv/bin/pip install -r requirements.txt	
 
 run:
 	@if [ ! -f ./venv/bin/python3 ]; then \
@@ -23,6 +24,9 @@ debug:
 
 clean:
 	rm -rf __pycache__ .mypy_cache
+
+clean-strict: clean
+	rm -rf venv
 
 lint:
 	@./venv/bin/$(FLAKE8) . --exclude=venv

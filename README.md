@@ -76,6 +76,11 @@ To delete pycache and mypy_cache
 make clean
 ```
 
+To delete also the environment
+```bash 
+make clean-strict
+```
+
 
 To run mypy and flake8 use:
 
