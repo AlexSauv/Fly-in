@@ -16,12 +16,11 @@ The core difficulty lies in dynamic conflict resolution and strict constraint ad
 
 #### Djikstra Time-Dependant
 
-The pathfinding core relies on a customized Time-Dependent Dijkstra Algorithm engineered to navigate spatial-temporal constraints without collisions.
+The pathfinding core relies on a customized Time-Dependent Dijkstra Algorithm engineered to navigate spatial-temporal constraints without collisions. The algorithm will look up multiple hypothetical paths possible and sort them depending
+on cost turn and priorities with heapq, it will exclude dead ends paths through the programs and look for hypothetical shortest paths unvisited until the end hub.
 
 #### 1.Space-Time calculation
-Standard shortest-path algorithms are blind to temporal conflicts. To prevent collisions before drones take off, our pathfinder implements a custom Time-Dependent Dijkstra.
-
-- State Representation: The graph exploration states tracking is expanded into a 3D space-time coordinate tuple: (hub_name, execution_turn).
+Standard shortest-path algorithms are blind to temporal conflicts. To prevent collisions before drones take off, our pathfinder implements a custom Time-Dependent Dijkstra depending on reservation dictionnaries for hubs and connections for each turns.
 
 - Dynamic Occupancy Look-up: Centralized dictionaries (planned_hub and planned_link) record precisely how many units are scheduled on any zone or connection during an exact time-step.
 
