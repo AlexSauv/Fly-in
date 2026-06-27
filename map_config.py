@@ -8,7 +8,7 @@ try:
     from parser import FileParser
 except ImportError:
     print("Make sure to use: - make install before - make run")
-    sys.exit(1)
+    sys.exit(0)
 
 
 class ZoneType(Enum):
@@ -106,8 +106,20 @@ class MapConfig:
 
             self.nb_drones = int(lines[0].split(":")[1].strip())
             if self.nb_drones <= 0:
-                raise ValueError("[DRONE] nb_drones must"
-                                 " be a positive integer")
+                raise ValueError("[DRONE] nb_drones must over 0")
+            if self.nb_drones > 100:
+                print("Program can be lagging or freeze with "
+                      "the amount of drones, are you sure ? [Y/N]")
+                answer = input()
+                if answer == "Y" or answer == 'y':
+                    pass
+                elif answer == "N" or answer == 'n':
+                    print("The system will close, make sure to "
+                          "change the number of drones.")
+                    sys.exit(0)
+                else:
+                    raise ValueError("Answer invalid.The system will close,"
+                                     " next time make sure to answer y or n")
             for line in lines[1:]:
                 line_count += 1
                 prefix, details = line.split(":")

@@ -62,13 +62,33 @@ This command initializes a local virtual environment (./venv) and pulls down req
 ### Execution
 To run the default simulation layout from the first map (01_linear_path.txt), use:
 ```bash 
-make run AGRS=file_name_map.txt
+make run ARGS=file_name_map.txt
 ```
 To test custom configurations or harder maps, pass the file path via the ARGS parameter:
 ```bash 
 python3 fly-in.py file_name_map.txt
 ```
 
+### Tools
+
+To delete pycache and mypy_cache
+
+```bash 
+make clean
+```
+
+
+To run mypy and flake8 use:
+
+```bash 
+make lint
+```
+
+or mypy and flake8 strict use:
+
+```bash 
+make lint-strict
+```
 
 
 ## 📚 Resources

@@ -8,7 +8,7 @@ except ImportError:
     print("Make sure to use: - make install before - make run\n "
           "or to switch on environment before running with"
           " - source venv/bin/activate")
-    sys.exit(1)
+    sys.exit(0)
 
 
 def main() -> None:
@@ -27,12 +27,12 @@ def main() -> None:
 
     except Exception as e:
         print(f"[ERROR] {e}")
-        sys.exit(1)
+        sys.exit(0)
     except KeyboardInterrupt:
         subprocess.run('clear', shell=True)
         print("Fly in simulation closed.")
         time.sleep(1)
-        sys.exit(1)
+        sys.exit(0)
 
 
 if __name__ == "__main__":
