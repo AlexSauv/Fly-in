@@ -12,6 +12,10 @@ install:
 	./venv/bin/pip install $(MYPY) $(FLAKE8) $(PYDANTIC) $(ARCADE)	
 
 run:
+	@if [ ! -f ./venv/bin/python3 ]; then \
+			echo "ERROR VENV: make sure to run 'make install' before 'make run' and to be in environment"; \
+			exit 1; \
+	fi
 	./venv/bin/$(PY) $(NAME) $(ARGS)
 
 debug:
