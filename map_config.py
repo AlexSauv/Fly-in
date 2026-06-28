@@ -134,14 +134,14 @@ class MapConfig:
                     drone_line_idx = index
                     break
                 else:
-                    line_count = index + 1
+                    line_count = index - 1
                     raise ValueError(" [CONFIG] must begin"
                                      " with nb_drones:int")
+            line_count = index + 1
             drone_line: str = lines[drone_line_idx].strip()
             if drone_line is None:
                 raise ValueError("[CONFIG] Nb_drones is missing")
 
-            drone_line = lines[drone_line_idx].strip()
             self.nb_drones = int(drone_line.split(":")[1].strip())
             if self.nb_drones <= 0:
                 raise ValueError("[DRONE] nb_drones must over 0")
