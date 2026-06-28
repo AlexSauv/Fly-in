@@ -2,7 +2,10 @@ import sys
 try:
     import arcade
 except ImportError:
-    print("Make sure to use: - make install before - make run")
+    print("Make sure to use: - make install before - make run "
+          "and run on a environment:"
+          "source venv/bin/activate if"
+          " python3 fly_in.py name_map.txt")
     sys.exit(0)
 from typing import Any
 from map_config import MapConfig, ZoneType
