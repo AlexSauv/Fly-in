@@ -6,7 +6,8 @@ try:
     from typing_extensions import Self, Optional
     from pydantic import BaseModel, Field, model_validator, ValidationError
 except ImportError:
-    print("Make sure to use: - make install before - make run")
+    print("Make sure to use: - make install before - make run and "
+          "run in environment with source venv/bin/activate")
     sys.exit(0)
 
 

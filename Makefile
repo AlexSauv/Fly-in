@@ -4,6 +4,7 @@ MYPY= mypy
 FLAKE8= flake8
 PYDANTIC = pydantic
 ARCADE = arcade
+ARGS= 01_linear_path.txt
 
 .PHONY: install run debug lint lint-strict clean clean-strict
 

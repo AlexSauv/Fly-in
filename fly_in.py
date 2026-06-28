@@ -1,13 +1,18 @@
 import sys
+import subprocess
+import time
 try:
     from rendering import MapDisplay
     import arcade
-    import subprocess
-    import time
 except ImportError:
     print("Make sure to use: - make install before - make run\n "
           "or to switch on environment before running with"
           " - source venv/bin/activate")
+    sys.exit(0)
+except KeyboardInterrupt:
+    subprocess.run('clear', shell=True)
+    print("Fly in simulation closed.")
+    time.sleep(1)
     sys.exit(0)
 
 
@@ -22,6 +27,7 @@ def main() -> None:
             arcade.run()
         else:
             raise ValueError("[ARGS] The input must be either:\n"
+                             " - make run\n"
                              " - make run ARGS=map_name.txt\n"
                              " - python3 fly-in.py map_name.txt\n\n")
 
