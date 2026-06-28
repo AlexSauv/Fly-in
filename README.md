@@ -45,6 +45,14 @@ Dynamic color-coding maps mirroring custom metadata criteria loaded from map fil
 
 Automated generation of a conforming output_file.txt log sequence detailing step-by-step turn mechanics.
 
+#### Output_file example
+```bash
+D1-waypoint1 
+D1-waypoint2, D2-waypoint1 
+D1-goal, D2-waypoint2 
+D2-goal 
+```
+
 ## 🛠️ Instructions
 
 ### Prerequisites
